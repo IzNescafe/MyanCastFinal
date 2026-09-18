@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "692424555119",
+    "project_id": "myancast-personal",
+    "storage_bucket": "myancast-personal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:692424555119:android:558897ae66e7836793eb9a",
+        "android_client_info": {
+          "package_name": "com.example.myancast"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkLjAsiBiObOqutzI-NZUCC2p1Cw4-8xo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
