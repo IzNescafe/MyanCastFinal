@@ -1,1 +1,11 @@
-/build
+# .gitignore
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild
+.cxx
+google-services.json    ← optional (Course project အတွက် တင်လည်း ရ)
