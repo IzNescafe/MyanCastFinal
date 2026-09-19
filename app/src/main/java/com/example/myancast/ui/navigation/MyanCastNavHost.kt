@@ -14,6 +14,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.myancast.ui.home.HomeScreen
 import com.example.myancast.ui.theme.AppConfig
 
 @Composable
@@ -33,7 +34,14 @@ fun MyanCastNavHost(
         ) {
             // ─── Week 1: placeholder screens ───
             composable("home") {
-                PlaceholderScreen("Home", currentRoute)
+                HomeScreen(
+                    onPodcastClick = { id ->
+                        navController.navigate("podcast/$id")
+                    },
+                    onSettingsClick = {
+                        navController.navigate("settings")
+                    }
+                )
             }
             composable("news") {
                 PlaceholderScreen("News", currentRoute)
