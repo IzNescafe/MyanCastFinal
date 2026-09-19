@@ -11,7 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
@@ -21,33 +21,29 @@ import com.example.myancast.ui.theme.MyanCastTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()   // status bar + nav bar edge-to-edge
-
-        setContent {
-            MyanCastRoot()
-        }
+        setContent { MyanCastRoot() }
     }
 }
 
 /**
- * Root composable — config state ကို ဒီမှာ ထား
- * Settings က ပြောင်းလိုက်တာနဲ့ app တစ်ခုလုံး recompose ဖြစ်
+ * Root composable — app config state ကို ဒီမှာ ထားတယ်။
+ * Settings က ပြောင်းလိုက်တာနဲ့ theme တစ်ခုလုံး ချက်ချင်း recompose ဖြစ်မယ်။
  */
 @Composable
 private fun MyanCastRoot() {
-    // ─── App config state (persists across recomposition) ───
-    var config by remember { mutableStateOf(AppConfig(zawgyi = false, darkMode = true)) }
+    var config by rememberSaveable(stateSaver = AppConfig.Saver) {
+        mutableStateOf(AppConfig(zawgyi = false, darkMode = true))
+    }
 
     MyanCastTheme(config = config) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            val navController = rememberNavController()
-
             MyanCastNavHost(
-                navController = navController,
+                navController = rememberNavController(),
                 config = config,
                 onConfigChange = { config = it }
             )

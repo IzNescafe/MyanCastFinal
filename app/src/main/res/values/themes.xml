@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.MyanCast" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Compose က ကိုယ့်ဘာသာ ဆွဲတဲ့အတွက် NoActionBar။
+         App က dark-first မို့ launch လုပ်တုန်း အဖြူ flash မဖြစ်အောင် Material dark ကို သုံးတယ်။ -->
+    <style name="Theme.MyanCast" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg_dark</item>
+    </style>
 </resources>

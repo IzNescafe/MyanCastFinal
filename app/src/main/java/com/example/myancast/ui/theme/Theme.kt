@@ -6,6 +6,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -13,7 +15,15 @@ import androidx.compose.ui.graphics.Color
 data class AppConfig(
     val zawgyi: Boolean = false,
     val darkMode: Boolean = true
-)
+) {
+    companion object {
+        /** Screen လှည့်တဲ့အခါ setting မပျောက်အောင် သိမ်းပေးတယ်။ */
+        val Saver: Saver<AppConfig, Any> = listSaver<AppConfig, Boolean>(
+            save = { listOf(it.zawgyi, it.darkMode) },
+            restore = { AppConfig(zawgyi = it[0], darkMode = it[1]) }
+        )
+    }
+}
 
 val LocalAppConfig = staticCompositionLocalOf { AppConfig() }
 

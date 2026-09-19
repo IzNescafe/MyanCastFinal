@@ -1,17 +1,17 @@
-package com.example.myancast.ui.search
+package com.example.myancast.ui.news
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.example.myancast.ui.components.PlaceholderScreen
 
 @Composable
-fun SearchScreen(
-    onPodcastClick: (String) -> Unit,
+fun NewsScreen(
+    onNewsClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     PlaceholderScreen(
-        title = "ရှာဖွေ",
-        message = "ရှာဖွေမှုကို Phase 3 မှာ ထည့်မယ်",
+        title = "သတင်း",
+        message = "သတင်း စာရင်းကို Phase 2 မှာ ထည့်မယ်",
         modifier = modifier
     )
 }
