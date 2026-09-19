@@ -4,26 +4,49 @@ package com.example.myancast
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.rememberNavController
+import com.example.myancast.ui.navigation.MyanCastNavHost
 import com.example.myancast.ui.theme.AppConfig
 import com.example.myancast.ui.theme.MyanCastTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContent {
-            MyanCastTheme(config = AppConfig(zawgyi = false, darkMode = true)) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // Navigation က နက်ဖန် ထည့်မယ်
-                }
-            }
+        setContent { MyanCastRoot() }
+    }
+}
+
+/**
+ * Root composable — app config state ကို ဒီမှာ ထားတယ်။
+ * Settings က ပြောင်းလိုက်တာနဲ့ theme တစ်ခုလုံး ချက်ချင်း recompose ဖြစ်မယ်။
+ */
+@Composable
+private fun MyanCastRoot() {
+    var config by rememberSaveable(stateSaver = AppConfig.Saver) {
+        mutableStateOf(AppConfig(zawgyi = false, darkMode = true))
+    }
+
+    MyanCastTheme(config = config) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            MyanCastNavHost(
+                navController = rememberNavController(),
+                config = config,
+                onConfigChange = { config = it }
+            )
         }
     }
 }

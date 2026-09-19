@@ -1,0 +1,176 @@
+// ui/navigation/MyanCastNavHost.kt
+package com.example.myancast.ui.navigation
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
+import com.example.myancast.ui.details.PodcastDetailScreen
+import com.example.myancast.ui.home.HomeScreen
+import com.example.myancast.ui.library.LibraryScreen
+import com.example.myancast.ui.news.NewsDetailScreen
+import com.example.myancast.ui.news.NewsScreen
+import com.example.myancast.ui.player.FullPlayerScreen
+import com.example.myancast.ui.search.SearchScreen
+import com.example.myancast.ui.settings.SettingsScreen
+import com.example.myancast.ui.theme.AppConfig
+import com.example.myancast.ui.theme.GoldPrimary
+
+@Composable
+fun MyanCastNavHost(
+    navController: NavHostController,
+    config: AppConfig,
+    onConfigChange: (AppConfig) -> Unit
+) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            if (currentRoute in bottomNavRoutes) {
+                MyanCastBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route -> navController.navigateToTab(route) }
+                )
+            }
+        }
+    ) { padding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Home.route,
+            modifier = Modifier.padding(padding)
+        ) {
+            // ─── Bottom nav destinations ───
+            composable(Screen.Home.route) {
+                HomeScreen(
+                    onPodcastClick = { id ->
+                        navController.navigate(Screen.PodcastDetail.create(id))
+                    },
+                    onSettingsClick = { navController.navigateToTab(Screen.Settings.route) }
+                )
+            }
+
+            composable(Screen.News.route) {
+                NewsScreen(
+                    onNewsClick = { id ->
+                        navController.navigate(Screen.NewsDetail.create(id))
+                    }
+                )
+            }
+
+            composable(Screen.Search.route) {
+                SearchScreen(
+                    onPodcastClick = { id ->
+                        navController.navigate(Screen.PodcastDetail.create(id))
+                    }
+                )
+            }
+
+            composable(Screen.Library.route) {
+                LibraryScreen(
+                    onPodcastClick = { id ->
+                        navController.navigate(Screen.PodcastDetail.create(id))
+                    }
+                )
+            }
+
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    config = config,
+                    onConfigChange = onConfigChange
+                )
+            }
+
+            // ─── Detail destinations ───
+            composable(
+                route = Screen.PodcastDetail.route,
+                arguments = listOf(
+                    navArgument(Screen.ARG_PODCAST_ID) { type = NavType.StringType }
+                )
+            ) { entry ->
+                PodcastDetailScreen(
+                    podcastId = entry.arguments?.getString(Screen.ARG_PODCAST_ID).orEmpty(),
+                    onBack = { navController.popBackStack() },
+                    onEpisodeClick = { navController.navigate(Screen.Player.route) }
+                )
+            }
+
+            composable(
+                route = Screen.NewsDetail.route,
+                arguments = listOf(
+                    navArgument(Screen.ARG_NEWS_ID) { type = NavType.StringType }
+                )
+            ) { entry ->
+                NewsDetailScreen(
+                    newsId = entry.arguments?.getString(Screen.ARG_NEWS_ID).orEmpty(),
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Player.route) {
+                FullPlayerScreen(onBack = { navController.popBackStack() })
+            }
+        }
+    }
+}
+
+/**
+ * Tab တစ်ခုကို ပြောင်းတဲ့အခါ back stack မကြီးလာအောင် —
+ * start destination အထိ pop ပြီး state ကို ပြန်သိမ်း/ပြန်ယူတယ်။
+ */
+private fun NavHostController.navigateToTab(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
+@Composable
+private fun MyanCastBottomBar(
+    currentRoute: String?,
+    onNavigate: (String) -> Unit
+) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 0.dp
+    ) {
+        bottomNavItems.forEach { item ->
+            NavigationBarItem(
+                selected = currentRoute == item.route,
+                onClick = { onNavigate(item.route) },
+                icon = { Icon(item.icon, contentDescription = item.label) },
+                label = {
+                    Text(
+                        text = item.label,
+                        style = MaterialTheme.typography.bodySmall  // Myanmar family (Poppins မှာ မြန်မာ glyph မရှိ)
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = GoldPrimary,
+                    selectedTextColor = GoldPrimary,
+                    indicatorColor = Color.Transparent,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+    }
+}

@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.android)              // ← Kotlin plugin
+    alias(libs.plugins.google.services)             // ← Firebase (catalog မှာ ထည့်)
+    alias(libs.plugins.ksp)                         // ← Room KSP
 }
 
 android {
@@ -16,6 +16,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
