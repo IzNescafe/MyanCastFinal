@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -18,33 +21,38 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myancast.domain.model.Episode
+import com.example.myancast.domain.model.Podcast
 import com.example.myancast.ui.components.CategoryChips
 import com.example.myancast.ui.components.ContinueListeningCard
+import com.example.myancast.ui.components.EmptyView
 import com.example.myancast.ui.components.ErrorView
 import com.example.myancast.ui.components.LoadingView
 import com.example.myancast.ui.components.PodcastCard
 import com.example.myancast.ui.components.PodcastListItem
 import com.example.myancast.ui.components.SectionHeader
-import com.example.myancast.ui.theme.GoldPrimary
+import com.example.myancast.ui.theme.AppConfig
+import com.example.myancast.ui.theme.MyanCastTheme
 import com.example.myancast.ui.theme.TextHi
 import com.example.myancast.ui.theme.TextLo
 
+// ═══════════════════════════════════════════════
+// SCREEN
+// ═══════════════════════════════════════════════
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onPodcastClick: (String) -> Unit,
     onSettingsClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
-    vm: HomeViewModel = viewModel()
+    vm: HomeViewModel = viewModel(factory = HomeViewModel.factory())   // ← ★ factory
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
 
@@ -81,21 +89,41 @@ fun HomeScreen(
         }
     ) { padding ->
         when {
-            state.isLoading -> LoadingView()
-            state.error != null -> ErrorView(
-                message = state.error!!,
-                onRetry = vm::refresh
-            )
-            else -> HomeContent(
-                state = state,
-                onCategorySelect = vm::selectCategory,
-                onPodcastClick = onPodcastClick,
-                modifier = Modifier.padding(padding)
-            )
+            // ၁။ Loading အရင်
+            state.isLoading -> {
+                LoadingView(Modifier.padding(padding))
+            }
+            // ၂။ Error
+            state.error != null -> {
+                ErrorView(
+                    message = state.error ?: "Unknown error",
+                    onRetry = vm::refresh,
+                    modifier = Modifier.padding(padding)
+                )
+            }
+            // ၃။ Empty (အသစ်)
+            state.podcasts.isEmpty() -> {
+                EmptyView(
+                    message = "Podcast မရှိသေးပါ",
+                    modifier = Modifier.padding(padding)
+                )
+            }
+            // ၄။ Content
+            else -> {
+                HomeContent(
+                    state = state,
+                    onCategorySelect = vm::selectCategory,
+                    onPodcastClick = onPodcastClick,
+                    modifier = Modifier.padding(padding)
+                )
+            }
         }
     }
 }
 
+// ═══════════════════════════════════════════════
+// CONTENT
+// ═══════════════════════════════════════════════
 @Composable
 private fun HomeContent(
     state: HomeUiState,
@@ -138,7 +166,7 @@ private fun HomeContent(
         // ─── Categories ───
         item {
             Text(
-                text = "Categories",
+                text = "အမျိုးအစားများ",
                 style = MaterialTheme.typography.titleMedium,
                 color = TextHi,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -156,10 +184,7 @@ private fun HomeContent(
         // ─── Trending Now ───
         if (state.trending.isNotEmpty()) {
             item {
-                SectionHeader(
-                    title = "Trending Now",
-                    onSeeAll = { /* TODO */ }
-                )
+                SectionHeader(title = "လူကြိုက်များနေသည်")   // ← onSeeAll ဖျက်
             }
             item {
                 LazyRow(
@@ -179,7 +204,7 @@ private fun HomeContent(
 
         // ─── All Podcasts ───
         item {
-            SectionHeader(title = "All Podcasts")
+            SectionHeader(title = "Podcast အားလုံး")
         }
         items(state.podcasts) { podcast ->
             PodcastListItem(
@@ -187,5 +212,47 @@ private fun HomeContent(
                 onClick = { onPodcastClick(podcast.id) }
             )
         }
+    }
+}
+
+// ═══════════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════════
+@Preview(showBackground = true, backgroundColor = 0xFF0E0D0B)
+@Composable
+private fun HomeContentPreview() {
+    MyanCastTheme(config = AppConfig(darkMode = true, zawgyi = false)) {
+        HomeContent(
+            state = HomeUiState(
+                podcasts = listOf(
+                    Podcast("1", "နည်းပညာနှင့် လူငယ်", "desc", "https://picsum.photos/400", "နည်းပညာ", 12),
+                    Podcast("2", "မြန်မာ့သမိုင်း", "desc", "https://picsum.photos/401", "ဇာတ်လမ်း", 8)
+                ),
+                trending = listOf(
+                    Podcast("3", "Myanmar Tech", "desc", "https://picsum.photos/402", "နည်းပညာ", 20)
+                ),
+                categories = listOf("အားလုံး", "သတင်း", "နည်းပညာ"),
+                selectedCategory = "အားလုံး",
+                isLoading = false
+            ),
+            onCategorySelect = {},
+            onPodcastClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0E0D0B)
+@Composable
+private fun HomeLoadingPreview() {
+    MyanCastTheme {
+        LoadingView()
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0E0D0B)
+@Composable
+private fun HomeEmptyPreview() {
+    MyanCastTheme {
+        EmptyView(message = "Podcast မရှိသေးပါ")
     }
 }
