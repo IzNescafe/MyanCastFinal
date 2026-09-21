@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.myancast.domain.model.Podcast
+import com.example.myancast.domain.util.toMyanmarDigits
 import com.example.myancast.ui.theme.OutlineDark
 import com.example.myancast.ui.theme.SurfaceDark
 import com.example.myancast.ui.theme.TextHi
@@ -75,8 +76,8 @@ fun PodcastListItem(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "${podcast.episodeCount} episodes • ${podcast.category}",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "${podcast.episodeCount.toMyanmarDigits()} ပိုင်း • ${podcast.category}",
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextLo
                 )
             }

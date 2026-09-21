@@ -18,8 +18,23 @@ class DurationFormatterTest {
     }
 
     @Test
-    fun `label is minutes, blank when zero`() {
-        assertEquals("24 မိနစ်", formatDurationLabel(1470))
+    fun `duration label uses Myanmar digits and hours`() {
+        // ပုံမှန် မိနစ်
+        assertEquals("၂၄ မိနစ်", formatDurationLabel(1470))
+
+        // နာရီ + မိနစ်
+        assertEquals("၁ နာရီ ၂ မိနစ်", formatDurationLabel(3725))
+
+        // နာရီ ပြည့်
+        assertEquals("၁ နာရီ", formatDurationLabel(3600))
+        assertEquals("၂ နာရီ", formatDurationLabel(7200))
+
+        // ၁ မိနစ် အောက်
+        assertEquals("၁ မိနစ် အောက်", formatDurationLabel(45))
+        assertEquals("၁ မိနစ် အောက်", formatDurationLabel(59))
+
+        // သုည နဲ့ အနုတ် — crash မဖြစ်ရ
         assertEquals("", formatDurationLabel(0))
+        assertEquals("", formatDurationLabel(-5))
     }
 }

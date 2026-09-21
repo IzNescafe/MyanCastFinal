@@ -71,7 +71,7 @@ fun EpisodeRow(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = meta,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextLo
                 )
             }
