@@ -3,7 +3,6 @@ package com.example.myancast.data.repository
 
 import android.util.Log
 import com.example.myancast.data.firebase.snapshotFlow
-import com.example.myancast.data.firebase.toObjectWithId
 import com.example.myancast.domain.model.Episode
 import com.example.myancast.domain.model.Podcast
 import com.google.firebase.firestore.FirebaseFirestore
@@ -17,24 +16,18 @@ class PodcastRepository(
 
     fun getPodcasts(): Flow<List<Podcast>> =
         db.collection(COLLECTION_PODCASTS)
-            .snapshotFlow(Podcast::class.java) { podcast, id ->
-                podcast.copy(id = id)
+            .snapshotFlow(Podcast::class.java) { podcast, _ ->
+                podcast   // ← copy မလို — Firestore id field က auto-map
             }
 
     fun getEpisodes(podcastId: String): Flow<List<Episode>> =
         db.collection(COLLECTION_EPISODES)
             .whereEqualTo("podcastId", podcastId)
             .orderBy("publishedAt", Query.Direction.DESCENDING)
-            .snapshotFlow(Episode::class.java) { episode, id ->
-                episode.copy(id = id)
+            .snapshotFlow(Episode::class.java) { episode, _ ->
+                episode   // ← copy မလို
             }
 
-    /**
-     * Podcast တစ်ခုကို ID နဲ့ ရှာပါ
-     *
-     * @param id — Podcast ရဲ့ Firestore document ID
-     * @return Podcast ရှိရင် Podcast၊ မရှိရင် null
-     */
     suspend fun getPodcast(id: String): Podcast? {
         return try {
             val snapshot = db.collection(COLLECTION_PODCASTS)
@@ -43,9 +36,7 @@ class PodcastRepository(
                 .await()
 
             if (snapshot.exists()) {
-                snapshot.toObjectWithId(Podcast::class.java) { podcast, docId ->
-                    podcast.copy(id = docId)
-                }
+                snapshot.toObject(Podcast::class.java)
             } else {
                 Log.d("PodcastRepository", "getPodcast: Document $id not found")
                 null
