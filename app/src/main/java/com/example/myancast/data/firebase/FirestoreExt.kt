@@ -8,11 +8,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-/**
- * Firestore က document ID ကို field အနေနဲ့ မပေးဘူး။
- * `toObjects()` ပဲ သုံးရင် model ရဲ့ `id` က အမြဲ "" ဖြစ်နေမယ်။
- * ဒါကြောင့် document တစ်ခုချင်းစီကို map ပြီး ID ကို ထည့်ပေးရတယ်။
- */
 fun <T : Any> QuerySnapshot.toListWithIds(
     clazz: Class<T>,
     withId: (T, String) -> T
@@ -25,10 +20,6 @@ fun <T : Any> DocumentSnapshot.toObjectWithId(
     withId: (T, String) -> T
 ): T? = toObject(clazz)?.let { withId(it, id) }
 
-/**
- * Firestore Query ကို Flow အနေနဲ့ ပြောင်းပေးတယ် (document ID ပါ ပါဝင်)။
- * Collector ရပ်သွားရင် listener ကို အလိုအလျောက် ဖြုတ်ပေးတယ်။
- */
 fun <T : Any> Query.snapshotFlow(
     clazz: Class<T>,
     withId: (T, String) -> T

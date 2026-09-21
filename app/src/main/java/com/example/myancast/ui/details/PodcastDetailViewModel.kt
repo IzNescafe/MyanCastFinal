@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.myancast.data.repository.PodcastRepository
+import com.example.myancast.data.repository.PodcastRepositoryImpl
 import com.example.myancast.domain.model.Episode
 import com.example.myancast.domain.model.Podcast
 import kotlinx.coroutines.CancellationException
@@ -144,7 +145,7 @@ class PodcastDetailViewModel(
     companion object {
         fun factory(
             podcastId: String,
-            repo: PodcastRepository = PodcastRepository()
+            repo: PodcastRepository = PodcastRepositoryImpl()
         ) = viewModelFactory {
             initializer {
                 PodcastDetailViewModel(podcastId, repo)

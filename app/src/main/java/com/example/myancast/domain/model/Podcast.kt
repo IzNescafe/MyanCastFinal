@@ -6,5 +6,6 @@ data class Podcast(
     val description: String = "",
     val coverUrl: String = "",
     val category: String = "",
-    val episodeCount: Int = 0
+    val episodeCount: Int = 0,
+    val updatedAt: com.google.firebase.Timestamp? = null
 )

@@ -1,5 +1,6 @@
 package com.example.myancast.ui.home
 
+import com.example.myancast.ui.components.EmptyView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
