@@ -1,6 +1,5 @@
 package com.example.myancast.ui.details
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -70,18 +69,18 @@ class PodcastDetailViewModel(
     private fun load() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            loadPodcast()
-            loadEpisodes()
+            // Podcast မရှိရင် episodes ဆက်မဆွဲ — မဟုတ်ရင် error ကို ပြန်ဖျက်သွားမယ်
+            if (loadPodcast()) loadEpisodes()
         }
     }
 
-    private suspend fun loadPodcast() {
+    /** @return podcast ရရင် true */
+    private suspend fun loadPodcast(): Boolean {
         val podcast = try {
             repo.getPodcast(podcastId)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("DetailVM", "getPodcast failed", e)
             _state.update {
                 it.copy(
                     isLoading = false,
@@ -89,7 +88,7 @@ class PodcastDetailViewModel(
                     canRetry = true
                 )
             }
-            return
+            return false
         }
 
         if (podcast == null) {
@@ -100,16 +99,16 @@ class PodcastDetailViewModel(
                     canRetry = false
                 )
             }
-            return
+            return false
         }
 
         _state.update { it.copy(podcast = podcast) }
+        return true
     }
 
     private suspend fun loadEpisodes() {
         repo.getEpisodes(podcastId)
-            .catch { e ->
-                Log.e("DetailVM", "getEpisodes failed", e)
+            .catch { _ ->
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -131,7 +130,7 @@ class PodcastDetailViewModel(
                 }
                 _state.update {
                     it.copy(
-                        episodes = episodes,
+                        episodes = withCover,
                         isLoading = false,
                         error = null,
                         canRetry = false
