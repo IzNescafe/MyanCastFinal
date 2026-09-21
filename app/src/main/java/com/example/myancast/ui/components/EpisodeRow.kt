@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.myancast.domain.model.Episode
+import com.example.myancast.domain.util.formatDurationLabel
+import com.example.myancast.domain.util.formatRelativeDate
 import com.example.myancast.ui.theme.GoldPrimary
 import com.example.myancast.ui.theme.TextHi
 import com.example.myancast.ui.theme.TextLo
@@ -34,10 +36,16 @@ import com.example.myancast.ui.theme.TextLo
 fun EpisodeRow(
     index: Int,
     episode: Episode,
-    isPlaying: Boolean = false,
     onPlay: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPlaying: Boolean = false
 ) {
+    // duration == 0 / publishedAt == null ဆိုရင် "" ပြန်လာ → အဲ့အပိုင်း မပြ
+    val meta = listOf(
+        formatDurationLabel(episode.duration),
+        formatRelativeDate(episode.publishedAt)
+    ).filter { it.isNotBlank() }.joinToString(" · ")
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -59,12 +67,14 @@ fun EpisodeRow(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "${episode.duration / 60} min",
-                style = MaterialTheme.typography.labelSmall,
-                color = TextLo
-            )
+            if (meta.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = meta,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextLo
+                )
+            }
         }
         Spacer(Modifier.width(8.dp))
         IconButton(onClick = onPlay) {

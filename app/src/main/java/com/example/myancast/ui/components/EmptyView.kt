@@ -18,7 +18,7 @@ import com.example.myancast.ui.theme.TextLo
 
 @Composable
 fun EmptyView(
-    message: String = "ဘာမှ မရှိသေးပါ",
+    message: String,
     modifier: Modifier = Modifier
 ) {
     Column(

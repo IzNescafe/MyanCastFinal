@@ -107,7 +107,13 @@ fun MyanCastNavHost(
             ) { entry ->
                 PodcastDetailScreen(
                     podcastId = entry.arguments?.getString(Screen.ARG_PODCAST_ID).orEmpty(),
-                    onBack = { navController.popBackStack() },
+                    // Back မြန်မြန် အကြိမ်ကြိမ် နှိပ်ရင် Home ပါ pop မသွားအောင် —
+                    // လက်ရှိ ပေါ်နေတဲ့ entry ကသာ pop လုပ်ခွင့်ရှိ
+                    onBack = {
+                        if (navController.currentBackStackEntry == entry) {
+                            navController.popBackStack()
+                        }
+                    },
                     onEpisodeClick = { navController.navigate(Screen.Player.route) }
                 )
             }

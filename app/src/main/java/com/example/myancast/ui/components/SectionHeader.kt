@@ -16,8 +16,8 @@ import com.example.myancast.ui.theme.GoldPrimary
 @Composable
 fun SectionHeader(
     title: String,
-    onSeeAll: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSeeAll: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
