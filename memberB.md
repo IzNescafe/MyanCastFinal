@@ -133,7 +133,7 @@ Status က `Building` → `Enabled` ဖြစ်ရင် ပြီးပြီ�
 ---
 
 ## Step 2: ⚠️ တိတ်တဆိတ် ပျောက်နေတဲ့ Episode ပြဿနာ
-
+[FirestoreExt.kt](app/src/main/java/com/example/myancast/data/firebase/FirestoreExt.kt)
 ### ဒါက Firestore ရဲ့ အန္တရာယ်အရှိဆုံး အပြုအမူ
 
 ```
@@ -159,7 +159,7 @@ Error မပြဘူး။ Warning မပြဘူး။ တိတ်တဆိ�
 ## Step 3: `getPodcast(id)` ရေးခြင်း
 
 ### အရင်ဆုံး — A ကို စောင့်ပါ
-
+[FirestoreExt.kt](app/src/main/java/com/example/myancast/data/firebase/FirestoreExt.kt)
 ```bash
 # A က getPodcasts() ပိုင်း ပြီးပြီလား မေး → ပြီးရင်
 git pull origin dev
