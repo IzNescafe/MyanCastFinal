@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.myancast.data.repository.PodcastRepository
+import com.example.myancast.data.repository.PodcastRepositoryImpl
 import com.example.myancast.domain.model.Episode
 import com.example.myancast.domain.model.Podcast
 import kotlinx.coroutines.Job
@@ -92,7 +93,9 @@ class HomeViewModel(
 
     // ─── Factory ────────────────────────────────
     companion object {
-        fun factory(repo: PodcastRepository = PodcastRepository()) = viewModelFactory {
+        fun factory(
+            repo: PodcastRepository = PodcastRepositoryImpl()
+        ) = viewModelFactory {
             initializer { HomeViewModel(repo) }
         }
     }
