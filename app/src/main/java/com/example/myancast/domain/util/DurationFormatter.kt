@@ -10,9 +10,15 @@ fun formatDuration(seconds: Int): String {
     else "%d:%02d".format(m, s)
 }
 
-/** စက္ကန့် → "24 မိနစ်"၊ 0 (သို့) အနုတ်ဆိုရင် "" (UI မှာ မပြ) */
+/** စက္ကန့် → "၂၄ မိနစ်" / "၁ နာရီ ၂ မိနစ်" / "၁ မိနစ် အောက်"၊ 0 (သို့) အနုတ်ဆိုရင် "" (UI မှာ မပြ) */
 fun formatDurationLabel(seconds: Int): String {
     if (seconds <= 0) return ""
-    val minutes = seconds / 60
-    return "$minutes မိနစ်"
+    if (seconds < 60) return "၁ မိနစ် အောက်"
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    return when {
+        h == 0 -> "${m.toMyanmarDigits()} မိနစ်"
+        m == 0 -> "${h.toMyanmarDigits()} နာရီ"
+        else -> "${h.toMyanmarDigits()} နာရီ ${m.toMyanmarDigits()} မိနစ်"
+    }
 }

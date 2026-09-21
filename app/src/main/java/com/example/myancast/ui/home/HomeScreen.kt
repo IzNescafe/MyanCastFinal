@@ -33,7 +33,6 @@ import com.example.myancast.domain.model.Episode
 import com.example.myancast.domain.model.Podcast
 import com.example.myancast.ui.components.CategoryChips
 import com.example.myancast.ui.components.ContinueListeningCard
-import com.example.myancast.ui.components.EmptyView
 import com.example.myancast.ui.components.ErrorView
 import com.example.myancast.ui.components.LoadingView
 import com.example.myancast.ui.components.PodcastCard
@@ -103,7 +102,7 @@ fun HomeScreen(
                 )
             }
             // ၃။ Empty (အသစ်)
-            state.podcasts.isEmpty() -> {
+            state.allPodcasts.isEmpty() -> {
                 EmptyView(
                     message = "Podcast မရှိသေးပါ",
                     modifier = Modifier.padding(padding)
@@ -207,11 +206,15 @@ private fun HomeContent(
         item {
             SectionHeader(title = "Podcast အားလုံး")
         }
-        items(state.podcasts) { podcast ->
-            PodcastListItem(
-                podcast = podcast,
-                onClick = { onPodcastClick(podcast.id) }
-            )
+        if (state.podcasts.isEmpty()) {
+            item { EmptyView(message = "ဒီအမျိုးအစားမှာ မရှိသေးပါ") }
+        } else {
+            items(state.podcasts) { podcast ->
+                PodcastListItem(
+                    podcast = podcast,
+                    onClick = { onPodcastClick(podcast.id) }
+                )
+            }
         }
     }
 }
@@ -232,8 +235,8 @@ private fun HomeContentPreview() {
                 trending = listOf(
                     Podcast("3", "Myanmar Tech", "desc", "https://picsum.photos/402", "နည်းပညာ", 20)
                 ),
-                categories = listOf("အားလုံး", "သတင်း", "နည်းပညာ"),
-                selectedCategory = "အားလုံး",
+                categories = listOf(ALL_CATEGORY, "သတင်း", "နည်းပညာ"),
+                selectedCategory = ALL_CATEGORY,
                 isLoading = false
             ),
             onCategorySelect = {},
