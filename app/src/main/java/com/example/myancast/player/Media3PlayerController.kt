@@ -127,12 +127,12 @@ class Media3PlayerController(context: Context) : PlayerController {
 
     override fun skipBack() {
         val c = controller ?: return
-        seekTo(queue.skipBackTarget(c.currentPosition))
+        seekTo(skipBackTarget(c.currentPosition))
     }
 
     override fun skipForward() {
         val c = controller ?: return
-        seekTo(queue.skipForwardTarget(c.currentPosition, c.knownDurationMs()))
+        seekTo(skipForwardTarget(c.currentPosition, c.knownDurationMs()))
     }
 
     override fun next() {

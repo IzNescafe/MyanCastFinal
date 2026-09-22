@@ -14,8 +14,6 @@ class PlayerQueueTest {
         Episode(id = "e4", audioUrl = "   ")             // blank
     )
 
-    private val queue = PlayerQueue(emptyList(), 0)
-
     // ──────── from() ────────
 
     @Test
@@ -37,9 +35,20 @@ class PlayerQueueTest {
     }
 
     @Test
-    fun `from with unknown id falls back to index 0`() {
-        // Caller (PodcastDetailViewModel) က ID ကို ပြန်စစ်ရမယ်
-        assertEquals(0, PlayerQueue.from(episodes, "missing").startIndex)
+    fun `from with unknown id is empty`() {
+        // index 0 ကို မပြန်ရ — နှိပ်တဲ့ဟာ မဟုတ်တာ ဖွင့်မိမယ်
+        assertTrue(PlayerQueue.from(episodes, "missing").isEmpty)
+    }
+
+    @Test
+    fun `from with a tapped episode that has no audio is empty`() {
+        // e2 မှာ audioUrl မရှိ — တခြား episode ကို မဖွင့်မိစေရ
+        assertTrue(PlayerQueue.from(episodes, "e2").isEmpty)
+    }
+
+    @Test
+    fun `EMPTY has index minus one`() {
+        assertEquals(-1, PlayerQueue.EMPTY.startIndex)
     }
 
     @Test
@@ -53,19 +62,19 @@ class PlayerQueueTest {
 
     @Test
     fun `skipBack goes back 15s but not below zero`() {
-        assertEquals(45_000L, queue.skipBackTarget(60_000L))
-        assertEquals(0L, queue.skipBackTarget(10_000L))
+        assertEquals(45_000L, skipBackTarget(60_000L))
+        assertEquals(0L, skipBackTarget(10_000L))
     }
 
     @Test
     fun `skipForward goes 30s but not past duration`() {
-        assertEquals(90_000L, queue.skipForwardTarget(60_000L, 600_000L))
-        assertEquals(100_000L, queue.skipForwardTarget(90_000L, 100_000L))
+        assertEquals(90_000L, skipForwardTarget(60_000L, 600_000L))
+        assertEquals(100_000L, skipForwardTarget(90_000L, 100_000L))
     }
 
     @Test
     fun `skipForward with unknown duration just adds 30s`() {
-        assertEquals(40_000L, queue.skipForwardTarget(10_000L, 0L))
+        assertEquals(40_000L, skipForwardTarget(10_000L, 0L))
     }
 
     // ──────── Speed ────────
@@ -75,14 +84,14 @@ class PlayerQueueTest {
         var speed = 0.5f
         val seen = mutableListOf(speed)
         repeat(6) {
-            speed = queue.nextSpeed(speed)
+            speed = nextSpeed(speed)
             seen += speed
         }
         assertEquals(listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 0.5f), seen)
     }
 
     @Test
-    fun `nextSpeed with unknown speed restarts from the list`() {
-        assertEquals(0.75f, queue.nextSpeed(1.1f))
+    fun `nextSpeed with unknown speed resets to normal`() {
+        assertEquals(1f, nextSpeed(1.1f))
     }
 }

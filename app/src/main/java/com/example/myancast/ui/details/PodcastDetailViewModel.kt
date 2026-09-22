@@ -87,8 +87,8 @@ class PodcastDetailViewModel(
      */
     fun playEpisode(episodeId: String): Boolean {
         val queue = PlayerQueue.from(_state.value.episodes, episodeId)
-        // PlayerQueue က ID မတွေ့ရင် index 0 ကို ပြန်ပေးတယ် — ဒါဆို episode 3 နှိပ်ပြီး episode 1 ကြားရမယ်
-        if (queue.isEmpty || queue.episodes[queue.startIndex].id != episodeId) {
+        // ID မတွေ့ (သို့) audio မရှိရင် PlayerQueue က EMPTY ပြန်ပေးတယ်
+        if (queue.isEmpty) {
             _state.update { it.copy(playError = "ဒီအပိုင်းကို ဖွင့်လို့ မရပါ") }
             return false
         }

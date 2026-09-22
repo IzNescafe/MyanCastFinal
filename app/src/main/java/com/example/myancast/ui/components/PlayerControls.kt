@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Forward
+import androidx.compose.material.icons.automirrored.filled.Forward
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.example.myancast.ui.theme.BgDark
 import com.example.myancast.ui.theme.GoldPrimary
 import com.example.myancast.ui.theme.TextHi
+import com.example.myancast.ui.theme.TextLo
 
 @Composable
 fun PlayerControls(
@@ -36,7 +37,9 @@ fun PlayerControls(
     onNext: () -> Unit,
     onPrev: () -> Unit,
     modifier: Modifier = Modifier,
-    isBuffering: Boolean = false
+    isBuffering: Boolean = false,
+    hasNext: Boolean = true,
+    hasPrevious: Boolean = true
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -44,10 +47,20 @@ fun PlayerControls(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onSkipBack) {
-            Icon(Icons.Filled.Replay, "back", tint = TextHi, modifier = Modifier.size(28.dp))
+            Icon(
+                Icons.Filled.Replay,
+                contentDescription = "နောက်ပြန် ၁၅ စက္ကန့်",
+                tint = TextHi,
+                modifier = Modifier.size(28.dp)
+            )
         }
-        IconButton(onClick = onPrev) {
-            Icon(Icons.Filled.SkipPrevious, "prev", tint = TextHi, modifier = Modifier.size(36.dp))
+        IconButton(onClick = onPrev, enabled = hasPrevious) {
+            Icon(
+                Icons.Filled.SkipPrevious,
+                contentDescription = "ယခင် အပိုင်း",
+                tint = if (hasPrevious) TextHi else TextLo,
+                modifier = Modifier.size(36.dp)
+            )
         }
         Box(
             modifier = Modifier
@@ -67,17 +80,27 @@ fun PlayerControls(
             } else {
                 Icon(
                     imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = "Play/Pause",
+                    contentDescription = if (isPlaying) "ရပ်မည်" else "ဖွင့်မည်",
                     tint = BgDark,
                     modifier = Modifier.size(32.dp)
                 )
             }
         }
-        IconButton(onClick = onNext) {
-            Icon(Icons.Filled.SkipNext, "next", tint = TextHi, modifier = Modifier.size(36.dp))
+        IconButton(onClick = onNext, enabled = hasNext) {
+            Icon(
+                Icons.Filled.SkipNext,
+                contentDescription = "နောက် အပိုင်း",
+                tint = if (hasNext) TextHi else TextLo,
+                modifier = Modifier.size(36.dp)
+            )
         }
         IconButton(onClick = onSkipForward) {
-            Icon(Icons.Filled.Forward, "fwd", tint = TextHi, modifier = Modifier.size(28.dp))
+            Icon(
+                Icons.AutoMirrored.Filled.Forward,
+                contentDescription = "ရှေ့ ၃၀ စက္ကန့်",
+                tint = TextHi,
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
 }
