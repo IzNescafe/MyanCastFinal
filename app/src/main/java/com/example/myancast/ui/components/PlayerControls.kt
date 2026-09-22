@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -34,7 +35,8 @@ fun PlayerControls(
     onSkipForward: () -> Unit,
     onNext: () -> Unit,
     onPrev: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isBuffering: Boolean = false
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -55,12 +57,21 @@ fun PlayerControls(
                 .clickable(onClick = onPlayPause),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = "Play/Pause",
-                tint = BgDark,
-                modifier = Modifier.size(32.dp)
-            )
+            if (isBuffering) {
+                // Stream load နေတုန်း — play ခလုတ်နေရာမှာ spinner
+                CircularProgressIndicator(
+                    color = BgDark,
+                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(28.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = "Play/Pause",
+                    tint = BgDark,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
         }
         IconButton(onClick = onNext) {
             Icon(Icons.Filled.SkipNext, "next", tint = TextHi, modifier = Modifier.size(36.dp))
