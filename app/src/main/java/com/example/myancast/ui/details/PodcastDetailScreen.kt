@@ -201,8 +201,8 @@ private fun DetailContent(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        // ⚠️ Phase 3 MiniPlayer နေရာ — မဖျက်ပါနဲ့
-        contentPadding = PaddingValues(bottom = 96.dp)
+        // MiniPlayer နေရာကို NavHost ရဲ့ Scaffold padding က ပေးပြီးသား — ဒီမှာက အခွာ အနည်းငယ်ပဲ
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         // (၁) Podcast header (cover + title + category + description)
         item {

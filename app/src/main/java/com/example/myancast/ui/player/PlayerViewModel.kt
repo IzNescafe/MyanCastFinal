@@ -9,7 +9,7 @@ import com.example.myancast.MyanCastApp
 import com.example.myancast.domain.model.PlaybackState
 import com.example.myancast.domain.util.formatDuration
 import com.example.myancast.player.PlayerController
-import com.example.myancast.player.PlayerQueue
+import com.example.myancast.player.nextSpeed
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -110,13 +110,10 @@ class PlayerViewModel(
     /** 0.5 → 0.75 → 1 → 1.25 → 1.5 → 2 → 0.5 */
     fun cycleSpeed() {
         val current = controller.state.value.speed
-        controller.setSpeed(speedHelper.nextSpeed(current))
+        controller.setSpeed(nextSpeed(current))
     }
 
     companion object {
-        // nextSpeed() က queue ကို မသုံးဘူး — helper အတွက် empty queue တစ်ခု
-        private val speedHelper = PlayerQueue(emptyList(), 0)
-
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as MyanCastApp

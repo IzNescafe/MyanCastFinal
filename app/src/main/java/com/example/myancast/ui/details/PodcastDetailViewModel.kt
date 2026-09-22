@@ -58,9 +58,12 @@ class PodcastDetailViewModel(
     private val _state = MutableStateFlow(PodcastDetailUiState())
     val state: StateFlow<PodcastDetailUiState> = _state.asStateFlow()
 
-    /** လက်ရှိ ဖွင့်နေတဲ့ episode ID — EpisodeRow မှာ highlight ပြဖို့ */
+    /**
+     * လက်ရှိ **ဖွင့်နေတဲ့** episode ID — EpisodeRow မှာ pause icon ပြဖို့။
+     * ရပ်ထားရင် null → row က play icon ပြန်ပြတယ်။
+     */
     val nowPlayingId: StateFlow<String?> = player.state
-        .map { it.currentEpisode?.id }
+        .map { if (it.isPlaying) it.currentEpisode?.id else null }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -87,8 +90,8 @@ class PodcastDetailViewModel(
      */
     fun playEpisode(episodeId: String): Boolean {
         val queue = PlayerQueue.from(_state.value.episodes, episodeId)
-        // PlayerQueue က ID မတွေ့ရင် index 0 ကို ပြန်ပေးတယ် — ဒါဆို episode 3 နှိပ်ပြီး episode 1 ကြားရမယ်
-        if (queue.isEmpty || queue.episodes[queue.startIndex].id != episodeId) {
+        // ID မတွေ့ (သို့) audio မရှိရင် PlayerQueue က EMPTY ပြန်ပေးတယ်
+        if (queue.isEmpty) {
             _state.update { it.copy(playError = "ဒီအပိုင်းကို ဖွင့်လို့ မရပါ") }
             return false
         }

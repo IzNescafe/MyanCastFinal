@@ -16,29 +16,43 @@ data class PlayerQueue(
         /**
          * @param episodes — Firestore က episode စာရင်း
          * @param startEpisodeId — စဖွင့်မယ့် episode ID (null = ပထမဆုံး)
-         * @return — Playable queue
+         * @return ဖွင့်လို့ရတဲ့ queue၊ နှိပ်တဲ့ episode မှာ audio မရှိရင် EMPTY
+         *
+         * ID မတွေ့ရင် index 0 ကို မပြန်ဘူး — episode ၃ နှိပ်ပြီး ၁ ကို ကြားရရင်
+         * user က bug လို့ ထင်မယ်။ ဘာမှ မဖွင့်ဘဲ caller က message ပြတာ ပိုရိုးသားတယ်။
          */
         fun from(episodes: List<Episode>, startEpisodeId: String?): PlayerQueue {
             val playable = episodes.filter { it.audioUrl.isNotBlank() }
-            val startIdx = if (startEpisodeId != null) {
-                playable.indexOfFirst { it.id == startEpisodeId }.coerceAtLeast(0)
-            } else 0
-            return PlayerQueue(playable, startIdx)
+            if (playable.isEmpty()) return EMPTY
+            if (startEpisodeId == null) return PlayerQueue(playable, 0)
+
+            val index = playable.indexOfFirst { it.id == startEpisodeId }
+            return if (index >= 0) PlayerQueue(playable, index) else EMPTY
         }
+
+        val EMPTY = PlayerQueue(emptyList(), -1)
     }
+}
 
-    /** Skip back 15s — 0 အောက် မဆင်း */
-    fun skipBackTarget(currentMs: Long): Long = (currentMs - 15_000L).coerceAtLeast(0L)
+// ─── Skip / Speed — fullscope: 15s back / 30s forward, 0.5x – 2.0x ───
+// Queue instance မလိုဘူး — pure function တွေ
 
-    /** Skip forward 30s — duration ကျော် မဆန် */
-    fun skipForwardTarget(currentMs: Long, durationMs: Long): Long =
-        if (durationMs > 0) (currentMs + 30_000L).coerceAtMost(durationMs)
-        else currentMs + 30_000L
+const val SKIP_BACK_MS = 15_000L
+const val SKIP_FORWARD_MS = 30_000L
+val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 
-    /** Speed cycle — 0.5 → 0.75 → 1 → 1.25 → 1.5 → 2 → 0.5 */
-    fun nextSpeed(current: Float): Float {
-        val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
-        val idx = speeds.indexOfFirst { it == current }.coerceAtLeast(0)
-        return speeds[(idx + 1) % speeds.size]
-    }
+/** ၁၅ စက္ကန့် နောက်ပြန် — 0 အောက် မဆင်း */
+fun skipBackTarget(positionMs: Long): Long =
+    (positionMs - SKIP_BACK_MS).coerceAtLeast(0L)
+
+/** ၃၀ စက္ကန့် ရှေ့ — duration ကျော် မသွား (duration မသိရင် ပေါင်းရုံ) */
+fun skipForwardTarget(positionMs: Long, durationMs: Long): Long {
+    val target = positionMs + SKIP_FORWARD_MS
+    return if (durationMs > 0) target.coerceAtMost(durationMs) else target
+}
+
+/** 0.5 → 0.75 → 1 → 1.25 → 1.5 → 2 → 0.5၊ မသိတဲ့ speed ဆို 1x ပြန်စ */
+fun nextSpeed(current: Float): Float {
+    val i = PLAYBACK_SPEEDS.indexOf(current)
+    return if (i == -1) 1f else PLAYBACK_SPEEDS[(i + 1) % PLAYBACK_SPEEDS.size]
 }
