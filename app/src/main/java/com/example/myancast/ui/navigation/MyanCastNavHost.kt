@@ -1,6 +1,7 @@
 // ui/navigation/MyanCastNavHost.kt
 package com.example.myancast.ui.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -13,7 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -21,12 +25,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
+import com.example.myancast.MyanCastApp
+import com.example.myancast.ui.components.MiniPlayer
 import com.example.myancast.ui.details.PodcastDetailScreen
 import com.example.myancast.ui.home.HomeScreen
 import com.example.myancast.ui.library.LibraryScreen
 import com.example.myancast.ui.news.NewsDetailScreen
 import com.example.myancast.ui.news.NewsScreen
 import com.example.myancast.ui.player.FullPlayerScreen
+import com.example.myancast.ui.player.MiniPlayerViewModel
 import com.example.myancast.ui.search.SearchScreen
 import com.example.myancast.ui.settings.SettingsScreen
 import com.example.myancast.ui.theme.AppConfig
@@ -41,14 +48,44 @@ fun MyanCastNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
+    // MiniPlayerViewModel
+    val app = LocalContext.current.applicationContext as MyanCastApp
+    val miniVm: MiniPlayerViewModel = viewModel(
+        factory = MiniPlayerViewModel.factory(app.playerController)
+    )
+
+    val miniState by miniVm.state.collectAsStateWithLifecycle()
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            if (currentRoute in bottomNavRoutes) {
-                MyanCastBottomBar(
-                    currentRoute = currentRoute,
-                    onNavigate = { route -> navController.navigateToTab(route) }
-                )
+            Column{
+                // ★ MiniPlayer — Player screen မှာ ဖျောက်၊ episode ရှိမှ ပြ
+                if (miniState.visible && currentRoute != Screen.Player.route) {
+                    MiniPlayer(
+                        title = miniState.title,
+                        subtitle = miniState.subtitle,
+                        coverUrl = miniState.coverUrl,
+                        progress = miniState.progress,
+                        isPlaying = miniState.isPlaying,
+                        hasNext = miniState.hasNext,
+                        onExpand = {
+                            navController.navigate(Screen.Player.route) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onPlayPause = miniVm::togglePlayPause,
+                        onNext = miniVm::next
+                    )
+                }
+
+                // Bottom nav
+                if (currentRoute in bottomNavRoutes) {
+                    MyanCastBottomBar(
+                        currentRoute = currentRoute,
+                        onNavigate = { route -> navController.navigateToTab(route) }
+                    )
+                }
             }
         }
     ) { padding ->

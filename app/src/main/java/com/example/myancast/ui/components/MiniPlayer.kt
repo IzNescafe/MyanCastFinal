@@ -41,6 +41,7 @@ fun MiniPlayer(
     coverUrl: String,
     progress: Float,
     isPlaying: Boolean,
+    hasNext: Boolean = true,
     onExpand: () -> Unit,
     onPlayPause: () -> Unit,
     onNext: () -> Unit,
@@ -84,7 +85,7 @@ fun MiniPlayer(
                     Text(
                         text = subtitle,
                         maxLines = 1,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = TextLo
                     )
                 }
@@ -95,7 +96,10 @@ fun MiniPlayer(
                         tint = GoldPrimary
                     )
                 }
-                IconButton(onClick = onNext) {
+                IconButton(
+                    onClick = onNext,
+                    enabled = hasNext
+                ) {
                     Icon(
                         imageVector = Icons.Filled.SkipNext,
                         contentDescription = "Next",
