@@ -58,9 +58,12 @@ class PodcastDetailViewModel(
     private val _state = MutableStateFlow(PodcastDetailUiState())
     val state: StateFlow<PodcastDetailUiState> = _state.asStateFlow()
 
-    /** လက်ရှိ ဖွင့်နေတဲ့ episode ID — EpisodeRow မှာ highlight ပြဖို့ */
+    /**
+     * လက်ရှိ **ဖွင့်နေတဲ့** episode ID — EpisodeRow မှာ pause icon ပြဖို့။
+     * ရပ်ထားရင် null → row က play icon ပြန်ပြတယ်။
+     */
     val nowPlayingId: StateFlow<String?> = player.state
-        .map { it.currentEpisode?.id }
+        .map { if (it.isPlaying) it.currentEpisode?.id else null }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
