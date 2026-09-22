@@ -44,7 +44,7 @@ fun CategoryChips(
                     text = category,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     color = if (isSelected) BgDark else TextLo,
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }

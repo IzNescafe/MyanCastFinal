@@ -64,9 +64,10 @@ fun SettingsScreen(
         ) {
             SettingsToggle(
                 title = "ဇော်ဂျီ စာလုံး",
-                subtitle = if (config.zawgyi) "ဇော်ဂျီ သုံးနေသည်" else "ယူနီကုဒ် သုံးနေသည်",
-                checked = config.zawgyi,
-                onCheckedChange = { onConfigChange(config.copy(zawgyi = it)) }
+                subtitle = "Phase 5 တွင် ထည့်သွင်းမည်",
+                checked = false,
+                enabled = false,
+                onCheckedChange = { /* Phase 5 — EncodingUtil.kt ကြည့် */ }
             )
             HorizontalDivider(color = OutlineDark)
             SettingsToggle(
@@ -93,6 +94,7 @@ private fun SettingsToggle(
     title: String,
     subtitle: String,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
@@ -118,6 +120,7 @@ private fun SettingsToggle(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                 checkedTrackColor = GoldPrimary,
