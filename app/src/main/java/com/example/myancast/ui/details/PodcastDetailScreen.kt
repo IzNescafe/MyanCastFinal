@@ -25,11 +25,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,13 +74,18 @@ fun PodcastDetailScreen(
 
     // State ကို collect (StateFlow → Compose State)
     val state by vm.state.collectAsStateWithLifecycle()
+    val nowPlayingId by vm.nowPlayingId.collectAsStateWithLifecycle()
 
     // Stateless content ကို ခေါ်
     PodcastDetailContent(
         state = state,
+        nowPlayingId = nowPlayingId,
         onBack = onBack,
-        onEpisodeClick = onEpisodeClick,
+        // ဖွင့်လို့ရမှ Player ကို ဖွင့် — audio မရှိရင် snackbar ပဲ ပြ
+        onEpisodeClick = { id -> if (vm.playEpisode(id)) onEpisodeClick(id) },
+        onPlayAll = { vm.playAll() },
         onRetry = vm::retry,
+        onPlayErrorShown = vm::playErrorShown,
         modifier = modifier
     )
 }
@@ -93,11 +102,24 @@ private fun PodcastDetailContent(
     onBack: () -> Unit,
     onEpisodeClick: (String) -> Unit,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    nowPlayingId: String? = null,
+    onPlayAll: () -> Unit = {},
+    onPlayErrorShown: () -> Unit = {}
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // playError တစ်ခါ ပြပြီး ပြန်ရှင်း
+    LaunchedEffect(state.playError) {
+        val message = state.playError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        onPlayErrorShown()
+    }
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {},
@@ -154,7 +176,9 @@ private fun PodcastDetailContent(
                     podcast = podcast,
                     episodes = state.episodes,
                     onEpisodeClick = onEpisodeClick,
-                    modifier = Modifier.padding(padding)
+                    modifier = Modifier.padding(padding),
+                    nowPlayingId = nowPlayingId,
+                    onPlayAll = onPlayAll
                 )
             }
         }
@@ -171,7 +195,9 @@ private fun DetailContent(
     podcast: Podcast,
     episodes: List<Episode>,
     onEpisodeClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    nowPlayingId: String? = null,
+    onPlayAll: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -186,7 +212,7 @@ private fun DetailContent(
         // (၂) Action buttons
         item {
             ActionButtons(
-                onPlayAll = { /* TODO: Phase 3 */ },
+                onPlayAll = onPlayAll,
                 onSave = { /* TODO */ }
             )
         }
@@ -207,7 +233,8 @@ private fun DetailContent(
                     // ⚠️ index က 1 ကနေ စရမယ်
                     index = i + 1,
                     episode = ep,
-                    onPlay = { onEpisodeClick(ep.id) }
+                    onPlay = { onEpisodeClick(ep.id) },
+                    isPlaying = ep.id == nowPlayingId
                 )
             }
         }

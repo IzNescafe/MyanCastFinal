@@ -57,10 +57,19 @@ class FakePlayerController(
         _state.update { it.copy(positionMs = positionMs) }
     }
 
-    override fun skipBack() { /* Record if needed */ }
-    override fun skipForward() { /* Record if needed */ }
-    override fun next() { /* Record if needed */ }
-    override fun previous() { /* Record if needed */ }
+    var skipBackCount = 0
+        private set
+    var skipForwardCount = 0
+        private set
+    var nextCount = 0
+        private set
+    var previousCount = 0
+        private set
+
+    override fun skipBack() { skipBackCount++ }
+    override fun skipForward() { skipForwardCount++ }
+    override fun next() { nextCount++ }
+    override fun previous() { previousCount++ }
 
     override fun setSpeed(speed: Float) {
         lastSpeed = speed
