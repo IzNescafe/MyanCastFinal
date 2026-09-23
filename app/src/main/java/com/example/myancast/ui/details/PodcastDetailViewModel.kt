@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.myancast.MyanCastApp
+import com.example.myancast.data.repository.LibraryRepository
 import com.example.myancast.data.repository.PodcastRepository
 import com.example.myancast.data.repository.PodcastRepositoryImpl
 import com.example.myancast.domain.model.Episode
@@ -36,7 +37,7 @@ data class PodcastDetailUiState(
     val isLoading: Boolean       = true,
     val error    : String?       = null,
     val canRetry : Boolean       = false,
-    val playError: String?       = null    // ဖွင့်လို့ မရတဲ့ episode — snackbar နဲ့ ပြ
+    val playError: String?       = null
 ) {
     val hasContent: Boolean
         get() = podcast != null || episodes.isNotEmpty()
@@ -50,7 +51,8 @@ data class PodcastDetailUiState(
 class PodcastDetailViewModel(
     private val podcastId: String,
     private val repo: PodcastRepository,
-    private val player: PlayerController
+    private val player: PlayerController,
+    private val libraryRepo: LibraryRepository
 ) : ViewModel() {
 
     // ──────── State ────────
@@ -58,11 +60,20 @@ class PodcastDetailViewModel(
     private val _state = MutableStateFlow(PodcastDetailUiState())
     val state: StateFlow<PodcastDetailUiState> = _state.asStateFlow()
 
-    /** လက်ရှိ ဖွင့်နေတဲ့ episode ID — EpisodeRow မှာ highlight ပြဖို့ */
     val nowPlayingId: StateFlow<String?> = player.state
-        .map { it.currentEpisode?.id }
+        .map { if (it.isPlaying) it.currentEpisode?.id else null }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    // ★ အသစ် — isSubscribed (Flow)
+    val isSubscribed: StateFlow<Boolean> = libraryRepo.subscribedIds()
+        .map { podcastId in it }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false
+        )
 
     // ──────── Job Management ────────
 
@@ -81,14 +92,9 @@ class PodcastDetailViewModel(
         load()
     }
 
-    /**
-     * Episode တစ်ခုကို နှိပ်ရင် — podcast ရဲ့ episode အားလုံးကို queue လုပ်ပြီး အဲ့ကနေ စဖွင့်။
-     * @return ဖွင့်လိုက်ရင် true (Player ဖွင့်ရမယ်)၊ audio မရှိရင် false
-     */
     fun playEpisode(episodeId: String): Boolean {
         val queue = PlayerQueue.from(_state.value.episodes, episodeId)
-        // PlayerQueue က ID မတွေ့ရင် index 0 ကို ပြန်ပေးတယ် — ဒါဆို episode 3 နှိပ်ပြီး episode 1 ကြားရမယ်
-        if (queue.isEmpty || queue.episodes[queue.startIndex].id != episodeId) {
+        if (queue.isEmpty) {
             _state.update { it.copy(playError = "ဒီအပိုင်းကို ဖွင့်လို့ မရပါ") }
             return false
         }
@@ -96,7 +102,6 @@ class PodcastDetailViewModel(
         return true
     }
 
-    /** "အားလုံး ဖွင့်" — ပထမဆုံး ဖွင့်လို့ရတဲ့ episode ကနေ စ */
     fun playAll(): Boolean {
         val queue = PlayerQueue.from(_state.value.episodes, null)
         if (queue.isEmpty) {
@@ -107,9 +112,19 @@ class PodcastDetailViewModel(
         return true
     }
 
-    /** Snackbar ပြပြီးရင် ခေါ် */
     fun playErrorShown() {
         _state.update { it.copy(playError = null) }
+    }
+
+    // ★ အသစ် — Subscribe toggle
+    fun toggleSubscribe() {
+        viewModelScope.launch {
+            if (isSubscribed.value) {
+                libraryRepo.unsubscribe(podcastId)
+            } else {
+                libraryRepo.subscribe(podcastId)
+            }
+        }
     }
 
     // ──────── Private ────────
@@ -117,12 +132,10 @@ class PodcastDetailViewModel(
     private fun load() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            // Podcast မရှိရင် episodes ဆက်မဆွဲ — မဟုတ်ရင် error ကို ပြန်ဖျက်သွားမယ်
             if (loadPodcast()) loadEpisodes()
         }
     }
 
-    /** @return podcast ရရင် true */
     private suspend fun loadPodcast(): Boolean {
         val podcast = try {
             repo.getPodcast(podcastId)
@@ -166,15 +179,10 @@ class PodcastDetailViewModel(
                 }
             }
             .collect { episodes ->
-                //cover fallback logic
                 val cover = _state.value.podcast?.coverUrl.orEmpty()
-                //mean cover may be same for podcast and episodes
                 val withCover = episodes.map { ep ->
-                    if(ep.coverUrl.isBlank()){
-                        ep.copy(coverUrl = cover)
-                    }   else {
-                        ep
-                    }
+                    if (ep.coverUrl.isBlank()) ep.copy(coverUrl = cover)
+                    else ep
                 }
                 _state.update {
                     it.copy(
@@ -196,7 +204,12 @@ class PodcastDetailViewModel(
         ) = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as MyanCastApp
-                PodcastDetailViewModel(podcastId, repo, app.playerController)
+                PodcastDetailViewModel(
+                    podcastId,
+                    repo,
+                    app.playerController,
+                    app.libraryRepository     // ← ★ ဒါ ထည့်
+                )
             }
         }
     }

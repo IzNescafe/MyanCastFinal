@@ -133,7 +133,9 @@ private fun HomeContent(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 96.dp)
+        // MiniPlayer + bottom nav နေရာကို NavHost ရဲ့ Scaffold padding က ပေးပြီးသား —
+        // ဒီမှာက နောက်ဆုံး row နဲ့ bar ကြား နည်း" ခွာဖို့
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         // ─── Greeting ───
         item {

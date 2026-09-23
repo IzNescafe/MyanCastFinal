@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,7 +58,7 @@ import com.example.myancast.ui.theme.MyanCastTheme
 
 
 // ─────────────────────────────────────────────
-// ၁။ Public Entry Point — NavHost က ဒါကို ခေါ်
+// ၁။ Public Entry Point
 // ─────────────────────────────────────────────
 
 @Composable
@@ -67,21 +68,20 @@ fun PodcastDetailScreen(
     onEpisodeClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // ViewModel ကို factory နဲ့ ဖန်တီး — podcastId ကို ပေး
     val vm: PodcastDetailViewModel = viewModel(
         factory = PodcastDetailViewModel.factory(podcastId)
     )
 
-    // State ကို collect (StateFlow → Compose State)
     val state by vm.state.collectAsStateWithLifecycle()
     val nowPlayingId by vm.nowPlayingId.collectAsStateWithLifecycle()
+    val isSubscribed by vm.isSubscribed.collectAsStateWithLifecycle()
 
-    // Stateless content ကို ခေါ်
     PodcastDetailContent(
         state = state,
         nowPlayingId = nowPlayingId,
+        isSubscribed = isSubscribed,
+        onToggleSubscribe = vm::toggleSubscribe,
         onBack = onBack,
-        // ဖွင့်လို့ရမှ Player ကို ဖွင့် — audio မရှိရင် snackbar ပဲ ပြ
         onEpisodeClick = { id -> if (vm.playEpisode(id)) onEpisodeClick(id) },
         onPlayAll = { vm.playAll() },
         onRetry = vm::retry,
@@ -92,7 +92,7 @@ fun PodcastDetailScreen(
 
 
 // ─────────────────────────────────────────────
-// ၂။ Stateful Shell — Scaffold + State ခွဲခြား
+// ၂။ Stateful Shell
 // ─────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,12 +104,13 @@ private fun PodcastDetailContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     nowPlayingId: String? = null,
+    isSubscribed: Boolean = false,
+    onToggleSubscribe: () -> Unit = {},
     onPlayAll: () -> Unit = {},
     onPlayErrorShown: () -> Unit = {}
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // playError တစ်ခါ ပြပြီး ပြန်ရှင်း
     LaunchedEffect(state.playError) {
         val message = state.playError ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(message)
@@ -131,7 +132,6 @@ private fun PodcastDetailContent(
                         )
                     }
                 },
-                // Transparent — cover image နဲ့ ရောသွားအောင်
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground
@@ -139,13 +139,11 @@ private fun PodcastDetailContent(
             )
         }
     ) { padding ->
-        // ⚠️ State အစီအစဉ် — loading → error → podcast null → content
         when {
             state.isLoading -> {
                 LoadingView(Modifier.padding(padding))
             }
 
-            // Retry လုပ်လို့ရတဲ့ error (network) — retry ခလုတ်နဲ့
             state.error != null && state.canRetry -> {
                 ErrorView(
                     message = state.error,
@@ -154,7 +152,6 @@ private fun PodcastDetailContent(
                 )
             }
 
-            // Retry မရ (ဥပမာ Podcast ရှာမတွေ့ပါ) — message ပဲ ပြ
             state.error != null -> {
                 EmptyView(
                     message = state.error,
@@ -170,12 +167,13 @@ private fun PodcastDetailContent(
             }
 
             else -> {
-                // Local val ခံ — smart cast အတွက်
                 val podcast = state.podcast
                 DetailContent(
                     podcast = podcast,
                     episodes = state.episodes,
                     onEpisodeClick = onEpisodeClick,
+                    isSubscribed = isSubscribed,
+                    onToggleSubscribe = onToggleSubscribe,
                     modifier = Modifier.padding(padding),
                     nowPlayingId = nowPlayingId,
                     onPlayAll = onPlayAll
@@ -187,7 +185,7 @@ private fun PodcastDetailContent(
 
 
 // ─────────────────────────────────────────────
-// ၃။ Content — LazyColumn
+// ၃။ Content
 // ─────────────────────────────────────────────
 
 @Composable
@@ -195,34 +193,32 @@ private fun DetailContent(
     podcast: Podcast,
     episodes: List<Episode>,
     onEpisodeClick: (String) -> Unit,
+    isSubscribed: Boolean,
+    onToggleSubscribe: () -> Unit,
     modifier: Modifier = Modifier,
     nowPlayingId: String? = null,
     onPlayAll: () -> Unit = {}
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        // ⚠️ Phase 3 MiniPlayer နေရာ — မဖျက်ပါနဲ့
-        contentPadding = PaddingValues(bottom = 96.dp)
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        // (၁) Podcast header (cover + title + category + description)
         item {
             PodcastHeader(podcast = podcast)
         }
 
-        // (၂) Action buttons
         item {
             ActionButtons(
-                onPlayAll = onPlayAll,
-                onSave = { /* TODO */ }
+                isSubscribed = isSubscribed,
+                onToggleSubscribe = onToggleSubscribe,
+                onPlayAll = onPlayAll
             )
         }
 
-        // (၃) Section header — "ပိုင်းများ (N)"
         item {
             SectionHeader(title = "ပိုင်းများ (${episodes.size})")
         }
 
-        // (၄) Episodes — ရှိရင် row ပြ၊ မရှိရင် EmptyView (screen တစ်ခုလုံး မဟုတ်)
         if (episodes.isEmpty()) {
             item {
                 EmptyView("ပိုင်း မရှိသေးပါ")
@@ -230,7 +226,6 @@ private fun DetailContent(
         } else {
             itemsIndexed(episodes) { i, ep ->
                 EpisodeRow(
-                    // ⚠️ index က 1 ကနေ စရမယ်
                     index = i + 1,
                     episode = ep,
                     onPlay = { onEpisodeClick(ep.id) },
@@ -243,7 +238,7 @@ private fun DetailContent(
 
 
 // ─────────────────────────────────────────────
-// ၄။ PodcastHeader — cover + title + meta + description
+// ၄။ PodcastHeader
 // ─────────────────────────────────────────────
 
 @Composable
@@ -257,7 +252,6 @@ private fun PodcastHeader(
             .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Cover
         AsyncImage(
             model = podcast.coverUrl,
             contentDescription = podcast.title,
@@ -269,7 +263,6 @@ private fun PodcastHeader(
 
         Spacer(Modifier.height(16.dp))
 
-        // Title
         Text(
             text = podcast.title,
             style = MaterialTheme.typography.displaySmall,
@@ -279,7 +272,6 @@ private fun PodcastHeader(
 
         Spacer(Modifier.height(4.dp))
 
-        // Category · N ပိုင်း
         Text(
             text = "${podcast.category} · ${podcast.episodeCount} ပိုင်း",
             style = MaterialTheme.typography.bodySmall,
@@ -288,7 +280,6 @@ private fun PodcastHeader(
 
         Spacer(Modifier.height(16.dp))
 
-        // Description (max 3 ကြောင်း)
         Text(
             text = podcast.description,
             style = MaterialTheme.typography.bodyMedium,
@@ -304,13 +295,14 @@ private fun PodcastHeader(
 
 
 // ─────────────────────────────────────────────
-// ၅။ ActionButtons — အားလုံး ဖွင့် + သိမ်း
+// ၅။ ActionButtons
 // ─────────────────────────────────────────────
 
 @Composable
 private fun ActionButtons(
+    isSubscribed: Boolean,
+    onToggleSubscribe: () -> Unit,
     onPlayAll: () -> Unit,
-    onSave: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -329,17 +321,20 @@ private fun ActionButtons(
             Text("အားလုံး ဖွင့်")
         }
 
-        OutlinedButton(onClick = onSave) {
-            Icon(Icons.Default.Add, contentDescription = null)
+        OutlinedButton(onClick = onToggleSubscribe) {
+            Icon(
+                imageVector = if (isSubscribed) Icons.Default.Check else Icons.Default.Add,
+                contentDescription = null
+            )
             Spacer(Modifier.width(6.dp))
-            Text("သိမ်း")
+            Text(if (isSubscribed) "သိမ်းပြီး" else "သိမ်း")
         }
     }
 }
 
 
 // ─────────────────────────────────────────────
-// ၆။ @Preview — DetailContent ကိုသာ preview
+// ၆။ Previews
 // ─────────────────────────────────────────────
 
 @Preview(showBackground = true, backgroundColor = 0xFF0E0D0B)
@@ -380,6 +375,8 @@ private fun DetailContentPreview() {
             podcast = fakePodcast,
             episodes = fakeEpisodes,
             onEpisodeClick = {},
+            isSubscribed = false,
+            onToggleSubscribe = {},
             modifier = Modifier
         )
     }
@@ -393,6 +390,8 @@ private fun DetailContentEmptyEpisodesPreview() {
             podcast = fakePodcast,
             episodes = emptyList(),
             onEpisodeClick = {},
+            isSubscribed = false,
+            onToggleSubscribe = {},
             modifier = Modifier
         )
     }
@@ -400,7 +399,7 @@ private fun DetailContentEmptyEpisodesPreview() {
 
 
 // ─────────────────────────────────────────────
-// ၇။ Preview Fake Data
+// ၇။ Fake Data
 // ─────────────────────────────────────────────
 
 private val fakePodcast = Podcast(

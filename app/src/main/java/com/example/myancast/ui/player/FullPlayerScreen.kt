@@ -228,7 +228,9 @@ private fun PlayerBody(
             onSkipBack = onSkipBack,
             onSkipForward = onSkipForward,
             onNext = onNext,
-            onPrev = onPrev
+            onPrev = onPrev,
+            hasNext = state.hasNext,
+            hasPrevious = state.hasPrevious
         )
 
         Spacer(Modifier.height(20.dp))
