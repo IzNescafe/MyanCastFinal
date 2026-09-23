@@ -1,5 +1,6 @@
 package com.example.myancast.ui.details
 
+import com.example.myancast.FakeLibraryRepository
 import com.example.myancast.FakePlayerController
 import com.example.myancast.data.repository.PodcastRepository
 import com.example.myancast.domain.model.Episode
@@ -27,6 +28,7 @@ class PodcastDetailViewModelTest {
 
     private val repo: PodcastRepository = mockk()
     private val player = FakePlayerController()
+    private val libraryRepo = FakeLibraryRepository()          // ★ အသစ်
 
     private val podcast = Podcast(id = "p1", title = "Podcast", coverUrl = "cover.jpg")
 
@@ -50,14 +52,13 @@ class PodcastDetailViewModelTest {
         coEvery { repo.getPodcast("p1") } returns podcast
         every { repo.getEpisodes("p1") } returns flowOf(episodes)
 
-        val vm = PodcastDetailViewModel("p1", repo, player)
+        val vm = PodcastDetailViewModel("p1", repo, player, libraryRepo)   // ★
         val state = vm.state.value
 
         assertFalse(state.isLoading)
         assertNull(state.error)
         assertEquals(podcast, state.podcast)
         assertEquals(2, state.episodes.size)
-        // Cover မရှိတဲ့ episode က podcast cover ကို ယူ
         assertEquals("cover.jpg", state.episodes[0].coverUrl)
         assertEquals("own.jpg", state.episodes[1].coverUrl)
     }
@@ -66,7 +67,7 @@ class PodcastDetailViewModelTest {
     fun `missing podcast shows not-found error`() {
         coEvery { repo.getPodcast("missing") } returns null
 
-        val vm = PodcastDetailViewModel("missing", repo, player)
+        val vm = PodcastDetailViewModel("missing", repo, player, libraryRepo)   // ★
         val state = vm.state.value
 
         assertFalse(state.isLoading)
@@ -87,7 +88,7 @@ class PodcastDetailViewModelTest {
     private fun loadedVm(): PodcastDetailViewModel {
         coEvery { repo.getPodcast("p1") } returns podcast
         every { repo.getEpisodes("p1") } returns flowOf(playable)
-        return PodcastDetailViewModel("p1", repo, player)
+        return PodcastDetailViewModel("p1", repo, player, libraryRepo)   // ★
     }
 
     @Test
@@ -130,8 +131,8 @@ class PodcastDetailViewModelTest {
     @Test
     fun `playAll with no playable episodes does not play`() {
         coEvery { repo.getPodcast("p1") } returns podcast
-        every { repo.getEpisodes("p1") } returns flowOf(episodes)   // audioUrl မရှိ
-        val vm = PodcastDetailViewModel("p1", repo, player)
+        every { repo.getEpisodes("p1") } returns flowOf(episodes)
+        val vm = PodcastDetailViewModel("p1", repo, player, libraryRepo)   // ★
 
         assertFalse(vm.playAll())
 

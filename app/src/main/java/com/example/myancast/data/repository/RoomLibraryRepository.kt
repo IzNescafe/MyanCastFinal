@@ -47,7 +47,10 @@ class RoomLibraryRepository(
                 podcastId = progress.podcastId,
                 positionMs = progress.positionMs,
                 durationMs = progress.durationMs,
-                updatedAt = progress.updatedAt
+                updatedAt = progress.updatedAt,
+                episodeTitle = progress.episodeTitle,
+                podcastTitle = progress.podcastTitle,
+                coverURL = progress.coverUrl
             )
         )
     }
@@ -58,5 +61,8 @@ private fun LibraryEntity.toProgress() = PlaybackProgress(
     podcastId = podcastId,
     positionMs = positionMs,
     durationMs = durationMs,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    episodeTitle = episodeTitle,
+    podcastTitle = podcastTitle,
+    coverUrl = coverURL
 )
