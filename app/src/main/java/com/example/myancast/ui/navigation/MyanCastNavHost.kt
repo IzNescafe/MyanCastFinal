@@ -173,7 +173,13 @@ fun MyanCastNavHost(
             ) { entry ->
                 NewsDetailScreen(
                     newsId = entry.arguments?.getString(Screen.ARG_NEWS_ID).orEmpty(),
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    // သတင်းမှာ အသံပါပြီး ဖွင့်လို့ရမှသာ ခေါ်တယ် (screen ထဲက စစ်ပြီးသား)
+                    onPlay = {
+                        navController.navigate(Screen.Player.route) {
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
 

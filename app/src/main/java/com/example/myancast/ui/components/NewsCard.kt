@@ -65,7 +65,8 @@ fun FeaturedNewsCard(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = news.category,
-                    style = MaterialTheme.typography.labelSmall,
+                    // မြန်မာစာအပေါ် label* (Poppins) မသုံးရ — glyph မရှိလို့ ဘူးကွက် ထွက်မယ်
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextLo
                 )
             }
