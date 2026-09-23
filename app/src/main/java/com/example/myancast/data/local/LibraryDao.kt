@@ -1,20 +1,22 @@
 package com.example.myancast.data.local
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow                    // ← ★ ဒါ ရှိရမယ် ★
+import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LibraryDao {
 
-    @Query("SELECT id FROM library WHERE type = 'sub'")
-    fun getSubscribedIds(): Flow<List<String>>        // ← Flow လိုတယ်
+    @Query("SELECT * FROM library WHERE type = :type ORDER BY updatedAt DESC")
+    fun byType(type: String): Flow<List<LibraryEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(entity: LibraryEntity)
+    @Query("SELECT * FROM library WHERE type = 'history' ORDER BY updatedAt DESC LIMIT 1")
+    fun lastPlayed(): Flow<LibraryEntity?>
 
-    @Query("DELETE FROM library WHERE id = :id")
-    suspend fun delete(id: String)
+    @Upsert
+    suspend fun upsert(entity: LibraryEntity)
+
+    @Query("DELETE FROM library WHERE id = :id AND type = :type")
+    suspend fun delete(id: String, type: String)
 }

@@ -7,8 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [LibraryEntity::class],
-    version = 1,
-    exportSchema = false
+    version = 2                        // ← v1 → v2 (schema ပြောင်း)
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
@@ -23,7 +22,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "myancast.db"
-                ).build().also { INSTANCE = it }
+                )
+                    .fallbackToDestructiveMigration()   // ★ course project အတွက်
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }
