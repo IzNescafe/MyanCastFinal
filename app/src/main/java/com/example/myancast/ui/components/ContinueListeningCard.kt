@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,9 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.myancast.domain.model.Episode
 import com.example.myancast.ui.theme.BgDark
 import com.example.myancast.ui.theme.GoldPrimary
 import com.example.myancast.ui.theme.OutlineDark
@@ -37,12 +38,26 @@ import com.example.myancast.ui.theme.Surface2Dark
 import com.example.myancast.ui.theme.TextHi
 import com.example.myancast.ui.theme.TextLo
 
+/**
+ * Home ရဲ့ "ဆက်နားထောင်ရန်" card။
+ *
+ * `Episode` မဟုတ်ဘဲ primitive တွေ ယူတယ် — history က `PlaybackProgress` ကနေ လာလို့
+ * (title/podcastTitle/cover/progress အားလုံး အဲဒီထဲ ပါပြီးသား)။
+ *
+ * @param isPlaying အဲဒီ episode ကို ခု ဖွင့်နေရင် ⏸၊ မဟုတ်ရင် ▶
+ * @param onClick card ကို နှိပ် — Full Player ဖွင့်
+ * @param onPlayPause ဘေးက ခလုတ် — ဖွင့်/ရပ် (screen မပြောင်း)
+ */
 @Composable
 fun ContinueListeningCard(
-    episode: Episode,
-    progress: Float = 0.45f,
+    title: String,
+    subtitle: String,
+    coverUrl: String,
+    progress: Float,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPlaying: Boolean = false,
+    onPlayPause: () -> Unit = onClick
 ) {
     Card(
         modifier = modifier
@@ -55,14 +70,15 @@ fun ContinueListeningCard(
     ) {
         Column(Modifier.padding(12.dp)) {
             Text(
-                text = "Continue Listening",
-                style = MaterialTheme.typography.labelMedium,
+                text = "ဆက်နားထောင်ရန်",
+                // မြန်မာစာမို့ label* (Poppins) မသုံးရ
+                style = MaterialTheme.typography.bodySmall,
                 color = GoldPrimary
             )
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = episode.coverUrl,
+                    model = coverUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .size(64.dp)
@@ -72,16 +88,18 @@ fun ContinueListeningCard(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = episode.title,
+                        text = title,
                         style = MaterialTheme.typography.titleMedium,
                         color = TextHi,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "Myanmar Tech Podcast",
+                        text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = TextLo,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Box(
@@ -89,12 +107,12 @@ fun ContinueListeningCard(
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(GoldPrimary)
-                        .clickable(onClick = onClick),
+                        .clickable(onClick = onPlayPause),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Play",
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "ရပ်မည်" else "ဆက်ဖွင့်မည်",
                         tint = BgDark
                     )
                 }

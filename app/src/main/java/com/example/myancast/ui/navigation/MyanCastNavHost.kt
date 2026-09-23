@@ -102,7 +102,13 @@ fun MyanCastNavHost(
                     onPodcastClick = { id ->
                         navController.navigate(Screen.PodcastDetail.create(id))
                     },
-                    onSettingsClick = { navController.navigateToTab(Screen.Settings.route) }
+                    onSettingsClick = { navController.navigateToTab(Screen.Settings.route) },
+                    // ဆက်နားထောင်ရန် card နှိပ်ရင် Full Player (၂ ခါ ထပ်မဖွင့်အောင် launchSingleTop)
+                    onOpenPlayer = {
+                        navController.navigate(Screen.Player.route) {
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
 

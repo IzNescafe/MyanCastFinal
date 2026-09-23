@@ -20,16 +20,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.myancast.domain.model.Episode
 import com.example.myancast.domain.model.Podcast
 import com.example.myancast.ui.components.CategoryChips
 import com.example.myancast.ui.components.ContinueListeningCard
@@ -52,11 +55,21 @@ fun HomeScreen(
     onPodcastClick: (String) -> Unit,
     onSettingsClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
+    onOpenPlayer: () -> Unit = {},                                     // ← ★ ဆက်နားထောင်ရန်
     vm: HomeViewModel = viewModel(factory = HomeViewModel.factory())   // ← ★ factory
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // ဆက်ဖွင့်လို့ မရရင် တိတ်တဆိတ် မနေဘဲ အကြောင်း ပြ
+    LaunchedEffect(state.resumeError) {
+        val message = state.resumeError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        vm.resumeErrorShown()
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -114,6 +127,10 @@ fun HomeScreen(
                     state = state,
                     onCategorySelect = vm::selectCategory,
                     onPodcastClick = onPodcastClick,
+                    // ဖွင့်စရာ ရှိမှ Player ဖွင့် — history မရှိရင် card ကိုယ်တိုင် မပေါ်ဘူး
+                    onContinueClick = { if (vm.resumeLastPlayed()) onOpenPlayer() },
+                    // ခလုတ်က screen မပြောင်းဘဲ ဖွင့်/ရပ် ပြောင်းရုံ
+                    onContinueToggle = vm::toggleLastPlayed,
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -129,7 +146,9 @@ private fun HomeContent(
     state: HomeUiState,
     onCategorySelect: (String) -> Unit,
     onPodcastClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onContinueClick: () -> Unit = {},
+    onContinueToggle: () -> Unit = onContinueClick
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -153,13 +172,18 @@ private fun HomeContent(
             }
         }
 
-        // ─── Continue Listening ───
-        state.lastPlayed?.let { episode ->
+        // ─── ဆက်နားထောင်ရန် ───
+        state.lastPlayed?.let { progress ->
             item {
                 Spacer(Modifier.height(12.dp))
                 ContinueListeningCard(
-                    episode = episode,
-                    onClick = { onPodcastClick(episode.podcastId) }
+                    title = progress.episodeTitle,
+                    subtitle = progress.podcastTitle,
+                    coverUrl = progress.coverUrl,
+                    progress = progress.fraction,
+                    onClick = onContinueClick,
+                    isPlaying = state.isLastPlayedPlaying,
+                    onPlayPause = onContinueToggle
                 )
                 Spacer(Modifier.height(20.dp))
             }

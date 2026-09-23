@@ -10,8 +10,13 @@ import kotlinx.coroutines.flow.StateFlow
 interface PlayerController {
     val state: StateFlow<PlaybackState>
 
-    /** queue.isEmpty ဆိုရင် ဘာမှ မလုပ်ဘူး */
-    fun play(queue: PlayerQueue, podcastTitle: String)
+    /**
+     * queue.isEmpty ဆိုရင် ဘာမှ မလုပ်ဘူး။
+     *
+     * @param startPositionMs စဖွင့်မယ့် နေရာ (ms) — "ဆက်နားထောင်ရန်" အတွက်။
+     *   `play()` ပြီးမှ `seekTo()` ခေါ်တာ **မရဘူး**: service မချိတ်ရသေးရင် seek က ပျောက်သွားတယ်။
+     */
+    fun play(queue: PlayerQueue, podcastTitle: String, startPositionMs: Long = 0L)
     fun togglePlayPause()
     fun seekTo(positionMs: Long)
     fun skipBack()        // -15s

@@ -2,18 +2,27 @@
 package com.example.myancast.ui.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.myancast.MyanCastApp
+import com.example.myancast.data.repository.LibraryRepository
 import com.example.myancast.data.repository.PodcastRepository
 import com.example.myancast.data.repository.PodcastRepositoryImpl
-import com.example.myancast.domain.model.Episode
+import com.example.myancast.domain.model.PlaybackProgress
 import com.example.myancast.domain.model.Podcast
+import com.example.myancast.player.PlayerController
+import com.example.myancast.player.PlayerQueue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -26,25 +35,40 @@ data class HomeUiState(
     val trending: List<Podcast> = emptyList(),
     val categories: List<String> = listOf(ALL_CATEGORY),
     val selectedCategory: String = ALL_CATEGORY,
-    val lastPlayed: Episode? = null,
+    /** ဆက်နားထောင်ရန် — history ကနေ (ပြီးသွားတာ ဆို null) */
+    val lastPlayed: PlaybackProgress? = null,
+    /** ခုလက်ရှိ **ဖွင့်နေတဲ့** episode ID — ရပ်ထားရင် null */
+    val playingEpisodeId: String? = null,
+    /** ဆက်ဖွင့်လို့ မရတဲ့အခါ snackbar နဲ့ ပြဖို့ (တိတ်တဆိတ် မရပ်သွားအောင်) */
+    val resumeError: String? = null,
     val isLoading: Boolean = true,
     val error: String? = null
-)
+) {
+    /** ဆက်နားထောင်ရန် card မှာ ⏸ ပြမလား ▶ ပြမလား */
+    val isLastPlayedPlaying: Boolean
+        get() = lastPlayed != null && lastPlayed.episodeId == playingEpisodeId
+}
 
 // ═══════════════════════════════════════════════
 // VIEWMODEL
 // ═══════════════════════════════════════════════
 class HomeViewModel(
-    private val repo: PodcastRepository
+    private val repo: PodcastRepository,
+    private val libraryRepo: LibraryRepository,
+    private val player: PlayerController
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
     private var loadJob: Job? = null
+    private var lastPlayedJob: Job? = null
+    private var playbackJob: Job? = null
 
     init {
         loadPodcasts()
+        observeLastPlayed()
+        observePlayback()
     }
 
     // ─── Load ───────────────────────────────────
@@ -76,7 +100,94 @@ class HomeViewModel(
         }
     }
 
+    /**
+     * History ကနေ နောက်ဆုံး နားထောင်ခဲ့တာကို နားထောင်ထားတယ်။
+     * ၉၅% ကျော် ပြီးသွားတာ ဆို `null` — "ပြီးသွားတာ" ကို ဆက်နားထောင်ခိုင်းလို့ မဖြစ်။
+     * History မရလည်း Home မပျက်ရဘူး (podcast list က အဓိက)။
+     */
+    private fun observeLastPlayed() {
+        lastPlayedJob?.cancel()
+
+        lastPlayedJob = viewModelScope.launch {
+            libraryRepo.lastPlayed()
+                .catch { /* history ဆွဲမရလည်း Home ကို မထိခိုက်စေရ */ }
+                .collect { progress ->
+                    _state.update {
+                        it.copy(lastPlayed = progress?.takeUnless { p -> p.isFinished })
+                    }
+                }
+        }
+    }
+
+    /** ဖွင့်နေတဲ့ episode ဘာလဲ နားထောင်တယ် — card ရဲ့ ▶/⏸ icon အတွက် */
+    private fun observePlayback() {
+        playbackJob?.cancel()
+
+        playbackJob = viewModelScope.launch {
+            player.state
+                .map { if (it.isPlaying) it.currentEpisode?.id else null }
+                .distinctUntilChanged()
+                .collect { episodeId ->
+                    _state.update { it.copy(playingEpisodeId = episodeId) }
+                }
+        }
+    }
+
     // ─── Actions ────────────────────────────────
+
+    /**
+     * ဆက်နားထောင်ရန် card နှိပ်ချိန် — Full Player ဖွင့်ဖို့။
+     * Player ထဲမှာ အဲဒီ episode ရှိပြီးသား ဆိုရင် **ပြန်မစဘူး** (ဖွင့်နေတာ မပျက်ရ) —
+     * မရှိသေးရင်သာ queue လုပ်ပြီး ရပ်ထားတဲ့ နေရာကနေ စဖွင့်တယ်။
+     * @return ဖွင့်စရာ ရှိရင် `true` (caller က Player screen ဖွင့်ဖို့)
+     */
+    fun resumeLastPlayed(): Boolean {
+        val progress = _state.value.lastPlayed ?: return false
+        if (!isLoadedInPlayer(progress.episodeId)) startFrom(progress)
+        return true
+    }
+
+    /**
+     * Card ရဲ့ ▶/⏸ ခလုတ် — ဖွင့်ထားပြီးသား ဆို ရပ်/ဖွင့် ပြောင်းရုံ၊
+     * မဖွင့်ရသေးရင် ရပ်ထားတဲ့ နေရာကနေ စဖွင့်။
+     */
+    fun toggleLastPlayed() {
+        val progress = _state.value.lastPlayed ?: return
+        if (isLoadedInPlayer(progress.episodeId)) player.togglePlayPause() else startFrom(progress)
+    }
+
+    private fun isLoadedInPlayer(episodeId: String): Boolean =
+        player.state.value.currentEpisode?.id == episodeId
+
+    private fun startFrom(progress: PlaybackProgress) {
+        viewModelScope.launch {
+            val episodes = try {
+                repo.getEpisodes(progress.podcastId).first()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // တိတ်တဆိတ် မရပ်သွားရ — user ကို အကြောင်း ပြရမယ်
+                _state.update { it.copy(resumeError = "ဆက်ဖွင့်လို့ မရပါ — အင်တာနက် ချိတ်ဆက်မှု စစ်ကြည့်ပါ") }
+                return@launch
+            }
+
+            val queue = PlayerQueue.from(episodes, progress.episodeId)
+            if (queue.isEmpty) {
+                _state.update { it.copy(resumeError = "ဒီအပိုင်းကို ဖွင့်လို့ မရပါ") }
+                return@launch
+            }
+
+            // ⚠️ play() ပြီးမှ seekTo() ခေါ်လို့ မရဘူး — app အသစ်ဖွင့်ချိန်မှာ service
+            // မချိတ်ရသေးလို့ seek က ပျောက်ပြီး အစကနေ ပြန်စမိမယ်။ start position ကို play() ကိုပဲ ပေး။
+            player.play(queue, progress.podcastTitle, progress.positionMs)
+        }
+    }
+
+    /** Snackbar ပြပြီးရင် ခေါ် */
+    fun resumeErrorShown() {
+        _state.update { it.copy(resumeError = null) }
+    }
+
     fun selectCategory(category: String) {
         _state.update {
             it.copy(
@@ -96,7 +207,10 @@ class HomeViewModel(
         fun factory(
             repo: PodcastRepository = PodcastRepositoryImpl()
         ) = viewModelFactory {
-            initializer { HomeViewModel(repo) }
+            initializer {
+                val app = this[APPLICATION_KEY] as MyanCastApp
+                HomeViewModel(repo, app.libraryRepository, app.playerController)
+            }
         }
     }
 }

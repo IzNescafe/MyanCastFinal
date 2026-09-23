@@ -25,6 +25,9 @@ class FakePlayerController(
         private set
     var lastPodcastTitle: String? = null
         private set
+    /** play() ကို ဘယ် position ကနေ စဖွင့်ခိုင်းလဲ (ဆက်နားထောင်ရန် အတွက် — C ထည့်) */
+    var lastStartPositionMs: Long? = null
+        private set
     var toggleCallCount = 0
         private set
     var seekToMs: Long? = null
@@ -32,17 +35,19 @@ class FakePlayerController(
     var lastSpeed: Float? = null
         private set
 
-    override fun play(queue: PlayerQueue, podcastTitle: String) {
+    override fun play(queue: PlayerQueue, podcastTitle: String, startPositionMs: Long) {
         playCallCount++
         lastQueue = queue
         lastPodcastTitle = podcastTitle
+        lastStartPositionMs = startPositionMs
         if (queue.isEmpty) return
         _state.update {
             it.copy(
                 queue = queue.episodes,
                 currentIndex = queue.startIndex,
                 podcastTitle = podcastTitle,
-                isPlaying = true
+                isPlaying = true,
+                positionMs = startPositionMs
             )
         }
     }
