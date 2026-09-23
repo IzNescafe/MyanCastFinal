@@ -3,6 +3,7 @@ package com.example.myancast.player
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -40,7 +41,14 @@ class Media3PlayerController(context: Context) : PlayerController {
     private var controller: MediaController? = null
 
     // Service မချိတ်ရသေးခင် play() ခေါ်ရင် — မှတ်ထားပြီး ချိတ်မိမှ ဖွင့်
-    private var pendingPlay: Pair<PlayerQueue, String>? = null
+    private var pendingPlay: PendingPlay? = null
+
+    /** Service မချိတ်ရသေးခင် play() ခေါ်ရင် — start position ပါ မှတ်ထားရမယ် */
+    private data class PendingPlay(
+        val queue: PlayerQueue,
+        val podcastTitle: String,
+        val startPositionMs: Long
+    )
 
     // PlaybackState မှာ Media3 type မထည့်ချင်လို့ ဒီမှာ သိမ်းထား
     private var queue = PlayerQueue(emptyList(), 0)
@@ -54,13 +62,29 @@ class Media3PlayerController(context: Context) : PlayerController {
         }
     }
 
+    /** ချိတ်နေတုန်းလား — တစ်ပြိုင်တည်း ၂ ခါ မချိတ်မိအောင် */
+    private var connecting = false
+
     init {
+        connect()
+    }
+
+    /**
+     * Service ကို ချိတ်တယ်။ **မအောင်မြင်ရင် နောက်တစ်ခါ `play()` ခေါ်ချိန်မှာ ပြန်ကြိုးစားတယ်** —
+     * app စတင်ချိန် (Activity မတက်ခင်) ချိတ်လို့ မရတတ်တာကြောင့် တစ်ခါတည်းနဲ့ လက်မလျှော့ရဘူး။
+     */
+    private fun connect() {
+        if (connecting || controller != null) return
+        connecting = true
+
         val token = SessionToken(appContext, ComponentName(appContext, PlaybackService::class.java))
         val future = MediaController.Builder(appContext, token).buildAsync()
         future.addListener({
+            connecting = false
             val connected = try {
                 future.get()
             } catch (e: Exception) {
+                Log.e("Media3PlayerController", "connect failed: ${e.message}", e)
                 _state.update { it.copy(error = "Player ကို စတင်လို့ မရပါ") }
                 return@addListener
             }
@@ -70,7 +94,8 @@ class Media3PlayerController(context: Context) : PlayerController {
             val pending = pendingPlay
             pendingPlay = null
             if (pending != null) {
-                startPlayback(connected, pending.first, pending.second)
+                _state.update { it.copy(error = null) }
+                startPlayback(connected, pending.queue, pending.podcastTitle, pending.startPositionMs)
             } else {
                 syncState(connected)
             }
@@ -79,11 +104,13 @@ class Media3PlayerController(context: Context) : PlayerController {
 
     // ──────── PlayerController ────────
 
-    override fun play(queue: PlayerQueue, podcastTitle: String) {
+    override fun play(queue: PlayerQueue, podcastTitle: String, startPositionMs: Long) {
         if (queue.isEmpty) return
 
         this.queue = queue
         this.podcastTitle = podcastTitle
+
+        val start = startPositionMs.coerceAtLeast(0L)
 
         // UI က episode ကို ချက်ချင်း မြင်ရအောင် — Media3 event မစောင့်
         _state.update {
@@ -92,7 +119,7 @@ class Media3PlayerController(context: Context) : PlayerController {
                 currentIndex = queue.startIndex,
                 podcastTitle = podcastTitle,
                 isBuffering = true,
-                positionMs = 0L,
+                positionMs = start,
                 durationMs = 0L,
                 error = null
             )
@@ -100,14 +127,20 @@ class Media3PlayerController(context: Context) : PlayerController {
 
         val c = controller
         if (c == null) {
-            pendingPlay = queue to podcastTitle
+            // Service မချိတ်ရသေး — start position ပါ မှတ်ထားပြီး ချိတ်ဖို့ ပြန်ကြိုးစား
+            pendingPlay = PendingPlay(queue, podcastTitle, start)
+            connect()
         } else {
-            startPlayback(c, queue, podcastTitle)
+            startPlayback(c, queue, podcastTitle, start)
         }
     }
 
     override fun togglePlayPause() {
-        val c = controller ?: return
+        val c = controller ?: run {
+            // မချိတ်ရသေးရင် ချိတ်ဖို့ ကြိုးစား — pending ရှိရင် ချိတ်မိတာနဲ့ ဖွင့်မယ်
+            connect()
+            return
+        }
         if (c.isPlaying) {
             c.pause()
             return
@@ -151,11 +184,16 @@ class Media3PlayerController(context: Context) : PlayerController {
 
     // ──────── Private ────────
 
-    private fun startPlayback(c: MediaController, queue: PlayerQueue, podcastTitle: String) {
+    private fun startPlayback(
+        c: MediaController,
+        queue: PlayerQueue,
+        podcastTitle: String,
+        startPositionMs: Long
+    ) {
         c.setMediaItems(
             queue.episodes.map { it.toMediaItem(podcastTitle) },
             queue.startIndex,
-            0L
+            startPositionMs      // ← Media3 ကိုယ်တိုင် အဲဒီနေရာက စဖွင့်တယ် (seekTo ခေါ်စရာ မလို)
         )
         c.prepare()
         c.play()

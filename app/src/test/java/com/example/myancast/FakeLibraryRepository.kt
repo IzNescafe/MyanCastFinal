@@ -14,6 +14,9 @@ class FakeLibraryRepository(
     private val _subscribed = MutableStateFlow(initialSubscribed)
     private val _history = MutableStateFlow(initialHistory)
 
+    /** saveProgress() ခေါ်တိုင်း မှတ်ထား — HistoryRecorder test အတွက် (C ထည့်) */
+    val saved = mutableListOf<PlaybackProgress>()
+
     override fun subscribedIds(): Flow<Set<String>> = _subscribed
 
     override suspend fun subscribe(podcastId: String) {
@@ -30,6 +33,7 @@ class FakeLibraryRepository(
         _history.map { it.maxByOrNull { p -> p.updatedAt } }
 
     override suspend fun saveProgress(progress: PlaybackProgress) {
+        saved += progress
         _history.value = _history.value.filter { it.episodeId != progress.episodeId } + progress
     }
 }
