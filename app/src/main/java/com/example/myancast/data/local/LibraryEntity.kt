@@ -10,7 +10,10 @@ data class LibraryEntity(
     val podcastId: String = "",        // history က ဘယ် podcast လဲ
     val positionMs: Long = 0L,
     val durationMs: Long = 0L,
-    val updatedAt: Long = 0L
+    val updatedAt: Long = 0L,
+    val episodeTitle: String = "",
+    val podcastTitle: String = "",
+    val coverURL: String = ""
 ) {
     companion object {
         const val TYPE_SUB = "sub"
