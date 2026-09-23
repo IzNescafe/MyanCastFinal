@@ -26,10 +26,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.myancast.MyanCastApp
+import com.example.myancast.data.repository.PodcastRepositoryImpl
 import com.example.myancast.ui.components.MiniPlayer
 import com.example.myancast.ui.details.PodcastDetailScreen
 import com.example.myancast.ui.home.HomeScreen
 import com.example.myancast.ui.library.LibraryScreen
+import com.example.myancast.ui.library.LibraryViewModel
 import com.example.myancast.ui.news.NewsDetailScreen
 import com.example.myancast.ui.news.NewsScreen
 import com.example.myancast.ui.player.FullPlayerScreen
@@ -121,10 +123,18 @@ fun MyanCastNavHost(
             }
 
             composable(Screen.Library.route) {
+                val app = LocalContext.current.applicationContext as MyanCastApp
+                val libraryVm: LibraryViewModel = viewModel(
+                    factory = LibraryViewModel.factory(
+                        libraryRepo = app.libraryRepository,
+                        podcastRepo = PodcastRepositoryImpl()
+                    )
+                )
                 LibraryScreen(
                     onPodcastClick = { id ->
                         navController.navigate(Screen.PodcastDetail.create(id))
-                    }
+                    },
+                    vm = libraryVm
                 )
             }
 
