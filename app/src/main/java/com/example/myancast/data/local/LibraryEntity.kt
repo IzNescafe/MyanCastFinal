@@ -13,7 +13,7 @@ data class LibraryEntity(
     val updatedAt: Long = 0L,
     val episodeTitle: String = "",
     val podcastTitle: String = "",
-    val coverURL: String = ""
+    val coverUrl: String = ""
 ) {
     companion object {
         const val TYPE_SUB = "sub"

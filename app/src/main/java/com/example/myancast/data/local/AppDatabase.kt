@@ -7,7 +7,8 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [LibraryEntity::class],
-    version = 2                        // ← v1 → v2 (schema ပြောင်း)
+    version = 2,                       // ← v1 → v2 (schema ပြောင်း)
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
