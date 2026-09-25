@@ -5,7 +5,6 @@ import com.example.myancast.data.local.LibraryEntity
 import com.example.myancast.domain.model.PlaybackProgress
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toSet
 
 class RoomLibraryRepository(
     private val dao: LibraryDao
@@ -13,7 +12,7 @@ class RoomLibraryRepository(
 
     override fun subscribedIds(): Flow<Set<String>> =
         dao.byType(LibraryEntity.TYPE_SUB).map { list ->
-            list.map { it.id }.toSet()
+            list.mapTo(mutableSetOf()) { it.id }
         }
 
     override suspend fun subscribe(podcastId: String) {
@@ -50,7 +49,7 @@ class RoomLibraryRepository(
                 updatedAt = progress.updatedAt,
                 episodeTitle = progress.episodeTitle,
                 podcastTitle = progress.podcastTitle,
-                coverURL = progress.coverUrl
+                coverUrl = progress.coverUrl
             )
         )
     }
@@ -64,5 +63,5 @@ private fun LibraryEntity.toProgress() = PlaybackProgress(
     updatedAt = updatedAt,
     episodeTitle = episodeTitle,
     podcastTitle = podcastTitle,
-    coverUrl = coverURL
+    coverUrl = coverUrl
 )

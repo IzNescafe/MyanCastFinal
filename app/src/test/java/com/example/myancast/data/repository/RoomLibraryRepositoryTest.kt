@@ -155,7 +155,7 @@ class RoomLibraryRepositoryTest {
     }
 
     @Test
-    fun `isFinished true when fraction 95%+`() {
+    fun `isFinished true at 95 percent or more`() = runTest {
         val p = PlaybackProgress(
             episodeId = "ep_1",
             podcastId = "pod_1",
@@ -167,7 +167,7 @@ class RoomLibraryRepositoryTest {
     }
 
     @Test
-    fun `isFinished false when fraction below 95%`() {
+    fun `isFinished false below 95 percent`() = runTest {     
         val p = PlaybackProgress(
             episodeId = "ep_1",
             podcastId = "pod_1",
